@@ -306,10 +306,17 @@ function stopMeter(canvas){ cancelAnimationFrame(rec.raf); if (rec.ctx) rec.ctx.
 
 /* ---------- Settings (API keys live only in this device's localStorage, never in the repo) ---------- */
 const CFG_KEY = "accentlab.settings";
-let cfg = { azureKey:"", azureRegion:"westeurope" };
+let cfg = { azureKey:"", azureRegion:"westeurope", orKey:"", orModel:"anthropic/claude-haiku-5.5" };
 try { Object.assign(cfg, JSON.parse(localStorage.getItem(CFG_KEY) || "{}")); } catch(e) {}
 function saveCfg(){ try { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); } catch(e) {} }
 const azureReady = () => !!(cfg.azureKey && cfg.azureRegion);
+const tutorReady = () => !!(cfg.orKey && cfg.orModel);
+// Tutor models on OpenRouter (cost per tip is a rough estimate at ~800 tokens in, ~300 out)
+const MODELS = [
+  ["anthropic/claude-haiku-5.5", "Claude Haiku 5.5", "about $0.0003 a tip, the cheapest"],
+  ["openai/gpt-4.1-mini", "GPT-4.1 mini", "about $0.001 a tip"],
+  ["anthropic/claude-sonnet-5.5", "Claude Sonnet 5.5", "about $0.005 a tip, deeper explanations"]
+];
 
 /* ---------- Step 2: Azure Pronunciation Assessment ----------
    iPhone records AAC (audio/mp4), which the REST API won't take, so decode it and re-encode as 16 kHz mono WAV first. */
@@ -389,6 +396,37 @@ function scoreSummary(res){
   const lines = [`Azure scores (0-100): overall ${res.pron}, accuracy ${res.accuracy}, fluency ${res.fluency}, completeness ${res.completeness}.`];
   res.words.forEach(w => lines.push(`- "${w.word}": ${w.score}${w.error !== "None" ? ` (${w.error})` : ""}; sounds: ${w.phonemes.map(p => `/${p.ph}/ ${p.score}`).join(", ")}`));
   return lines.join("\n");
+}
+
+/* ---------- Step 3: AI tutor via OpenRouter. It only coaches from the Azure scores (text), it never scores. ---------- */
+const TUTOR_SYSTEM = `You are a friendly American English pronunciation coach. The learner practices on a phone. Microsoft Azure has already scored their recording: trust the numbers, don't re-score, only coach.
+Focus on the weakest sound, preferring the sound of the current practice page if it scored below 80.
+Reply with JSON only, no other text, in exactly this shape:
+{"tip": "...", "drills": [{"say": "...", "why": "..."}]}
+- tip: 2-3 short sentences on tongue, lips and jaw for that sound, in plain words. You may use the IPA symbol once.
+- drills: 2 or 3 items. "say" is something to read aloud: a minimal pair, a few words, or a short sentence (max 10 words). "why" is under 12 words.`;
+
+async function askTutor(s, item, res){
+  const user = `Practice page: /${s.sym}/ (${s.name}).\nTarget text: "${item}"\nWhat Azure heard: "${res.heard}"\n${scoreSummary(res)}`;
+  let r;
+  try {
+    r = await fetch("https://openrouter.ai/api/v1/chat/completions", { method:"POST",
+      headers:{ "Authorization": `Bearer ${cfg.orKey.trim()}`, "Content-Type": "application/json", "X-Title": "Accent Lab" },
+      body: JSON.stringify({ model: cfg.orModel, max_tokens: 500, temperature: 0.4,
+        messages: [{ role:"system", content:TUTOR_SYSTEM }, { role:"user", content:user }] }) });
+  } catch(e){ throw new Error("Couldn't reach OpenRouter. Check your internet connection."); }
+  if (r.status === 401) throw new Error("OpenRouter didn't accept the key. Check it in Settings.");
+  if (r.status === 402) throw new Error("The OpenRouter key is out of credit or hit its limit.");
+  if (r.status === 429) throw new Error("Too many requests right now. Wait a moment and try again.");
+  if (!r.ok) throw new Error(`OpenRouter returned an error (${r.status}). Try again or pick another model in Settings.`);
+  const j = await r.json();
+  const text = (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || "";
+  try {
+    const o = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
+    if (typeof o.tip === "string" && Array.isArray(o.drills)) return { tip:o.tip, drills:o.drills.filter(d => d && d.say).slice(0,3) };
+  } catch(e) {}
+  if (!text.trim()) throw new Error("The tutor sent an empty answer. Try again.");
+  return { tip:text.trim(), drills:[] };   // model ignored the format: show its words as they are
 }
 
 /* ---------- UI helpers ---------- */
@@ -475,10 +513,10 @@ function renderSound(s){
         <ul class="items" id="items"></ul>
       </section>
 
-      <section class="card soon" aria-label="Tutor">
-        <h2>AI tutor <span class="tag">Step 3</span></h2>
-        <p class="note">The tutor will read your scores and give tips and drills for your weakest sounds. Until then, copy this item and paste it into Claude.</p>
-        <div class="row"><button class="btn btn-ghost" id="copy">Copy for Claude</button></div>
+      <section class="card" aria-label="AI tutor" aria-live="polite">
+        <h2>AI tutor</h2>
+        <div id="tutor"></div>
+        <div class="row"><button class="btn btn-listen" id="askTutor">Get a tip</button><button class="btn btn-ghost" id="copy">Copy for Claude</button></div>
       </section>
     </div>`;
 
@@ -501,7 +539,7 @@ function renderSound(s){
     $("#items").querySelectorAll("[data-i]").forEach(b => b.onclick = () => { idx = +b.dataset.i; resetTake(); paint(); window.scrollTo({top:0,behavior:"smooth"}); });
   }
   let take = 0, lastResult = null;   // take guards against a slow score landing on a different item
-  function resetTake(){ take++; lastResult = null; player.removeAttribute("src"); $("#mine").disabled = $("#compare").disabled = true; paintScore(); }
+  function resetTake(){ take++; lastResult = null; player.removeAttribute("src"); $("#mine").disabled = $("#compare").disabled = true; paintScore(); paintTutor(); }
   function haveTake(url, blob){ player.src = url; $("#mine").disabled = $("#compare").disabled = false; scoreTake(blob); }
 
   function paintScore(state){
@@ -531,13 +569,36 @@ function renderSound(s){
   async function scoreTake(blob){
     if (!azureReady() || !blob) return;
     const mine = ++take, item = s.items[idx];
-    paintScore({loading:true});
+    lastResult = null; paintScore({loading:true}); paintTutor();
     try {
       const result = await assessPronunciation(item, blob);
       if (mine !== take) return;
-      lastResult = result; paintScore({result});
+      lastResult = result; paintScore({result}); paintTutor();
     } catch(e){ if (mine === take) paintScore({error: e.message || "Scoring failed. Try again."}); }
   }
+
+  function paintTutor(state){
+    const box = $("#tutor"), btn = $("#askTutor");
+    btn.disabled = !tutorReady() || !lastResult || !!(state && state.loading);
+    btn.textContent = state && state.result ? "Another tip" : "Get a tip";
+    if (!tutorReady()){ box.innerHTML = `<p class="note">Add your OpenRouter key in <a href="#settings">Settings</a> and the tutor will read your scores and suggest a fix and drills.</p>`; return; }
+    if (!state){ box.innerHTML = `<p class="note">${lastResult ? "Tap Get a tip for advice on your weakest sound." : "Record yourself first. The tutor reads your scores."}</p>`; return; }
+    if (state.loading){ box.innerHTML = `<p class="note">Thinking…</p>`; return; }
+    if (state.error){ box.innerHTML = `<div class="warn">${esc(state.error)}</div>`; return; }
+    const t = state.result, model = (MODELS.find(m => m[0] === cfg.orModel) || [0, cfg.orModel])[1];
+    box.innerHTML = `<p style="margin:0">${esc(t.tip)}</p>
+      ${t.drills.length ? `<ul class="items" style="margin-top:12px">${t.drills.map(d => `<li><button data-drill="${esc(d.say)}"><span><b>${esc(d.say)}</b>${d.why ? `<br><span class="note">${esc(d.why)}</span>` : ""}</span><span aria-hidden="true">▶</span></button></li>`).join("")}</ul>
+      <p class="note">Tap a drill to hear it, then record it.</p>` : ""}
+      <p class="note">Tip by ${esc(model)}.</p>`;
+    box.querySelectorAll("[data-drill]").forEach(b => b.onclick = () => speak(b.dataset.drill));
+  }
+  $("#askTutor").onclick = async () => {
+    if (!lastResult) return;
+    const mine = take, res = lastResult;
+    paintTutor({loading:true});
+    try { const result = await askTutor(s, s.items[idx], res); if (mine === take) paintTutor({result}); }
+    catch(e){ if (mine === take) paintTutor({error: e.message || "The tutor failed. Try again."}); }
+  };
 
   $("#prev").onclick = () => { idx = (idx - 1 + s.items.length) % s.items.length; resetTake(); paint(); };
   $("#next").onclick = () => { idx = (idx + 1) % s.items.length; resetTake(); paint(); };
@@ -563,6 +624,7 @@ function renderSound(s){
   };
   paint();
   paintScore();
+  paintTutor();
   window.scrollTo(0,0);
 }
 
@@ -587,11 +649,52 @@ function renderSettings(){
         <p class="note">The key is saved only on this device. It is never put in the app's code or on GitHub.</p>
         <div class="row"><button class="btn btn-ghost" id="clearAz">Remove key from this device</button></div>
       </section>
-      <section class="card soon">
-        <h2>AI tutor <span class="tag">Step 3</span></h2>
-        <p class="note">The Claude key will go here.</p>
+      <section class="card">
+        <h2>AI tutor (OpenRouter)</h2>
+        <p class="note" style="margin:0">Paste an OpenRouter key (it starts with sk-or-). Give the key a small credit limit on openrouter.ai so it can never spend more.</p>
+        <label class="field"><span class="label">Key</span>
+          <span class="keyrow"><input type="password" id="orKey" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="sk-or-…">
+          <button class="btn btn-ghost" id="showOr" type="button" style="min-height:0;padding:8px 12px">Show</button></span></label>
+        <label class="field"><span class="label">Model</span>
+          <select id="orModel">${MODELS.map(([id,name]) => `<option value="${id}">${esc(name)}</option>`).join("")}<option value="custom">Other (type a model ID)</option></select></label>
+        <p class="note" id="modelCost"></p>
+        <label class="field" id="customWrap" hidden><span class="label">Model ID</span>
+          <input id="orCustom" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="for example google/gemini-2.5-flash"></label>
+        <div class="controls">
+          <button class="btn btn-rec" id="saveOr">Save</button>
+          <button class="btn btn-listen" id="checkOr">Check key</button>
+        </div>
+        <div class="warn" id="orWarn" hidden></div>
+        <p class="note">Saved only on this device, like the Azure key.</p>
+        <div class="row"><button class="btn btn-ghost" id="clearOr">Remove key from this device</button></div>
       </section>
     </div>`;
+  // OpenRouter section
+  const orKey = $("#orKey"), orModel = $("#orModel"), orCustom = $("#orCustom");
+  const known = MODELS.some(m => m[0] === cfg.orModel);
+  orKey.value = cfg.orKey; orModel.value = known ? cfg.orModel : "custom"; orCustom.value = known ? "" : cfg.orModel;
+  const syncCustom = () => { $("#customWrap").hidden = orModel.value !== "custom"; const m = MODELS.find(x => x[0] === orModel.value); $("#modelCost").textContent = m ? `Cost: ${m[2]}.` : "Check the price on openrouter.ai/models."; };
+  syncCustom(); orModel.onchange = syncCustom;
+  const readOr = () => ({ orKey:orKey.value.trim(), orModel: orModel.value === "custom" ? (orCustom.value.trim() || MODELS[0][0]) : orModel.value });
+  const orWarn = msg => { const w = $("#orWarn"); w.textContent = msg; w.hidden = !msg; };
+  $("#showOr").onclick = e => { const hid = orKey.type === "password"; orKey.type = hid ? "text" : "password"; e.currentTarget.textContent = hid ? "Hide" : "Show"; };
+  $("#saveOr").onclick = () => { Object.assign(cfg, readOr()); saveCfg(); toast(cfg.orKey ? "Saved on this device." : "Saved. No key yet."); };
+  $("#clearOr").onclick = () => { if (!confirm("Remove the OpenRouter key from this device?")) return; cfg.orKey = ""; saveCfg(); orKey.value = ""; toast("Key removed."); };
+  $("#checkOr").onclick = async () => {
+    const c = readOr();
+    if (!c.orKey){ orWarn("Paste the key first."); return; }
+    orWarn(""); toast("Checking…");
+    try {
+      const r = await fetch("https://openrouter.ai/api/v1/key", { headers:{ "Authorization": `Bearer ${c.orKey}` } });
+      if (!r.ok){ orWarn(r.status === 401 ? "OpenRouter didn't accept this key. Copy it again and paste it." : `OpenRouter answered with an error (${r.status}).`); return; }
+      const d = (await r.json()).data || {};
+      Object.assign(cfg, c); saveCfg();
+      const left = d.limit_remaining != null ? ` About $${Number(d.limit_remaining).toFixed(2)} left on its limit.` : (d.limit == null ? " This key has no credit limit; consider setting one on openrouter.ai." : "");
+      toast("The key works. Saved."); orWarn(""); if (left) { const w = $("#orWarn"); w.textContent = "✓ Key works." + left; w.hidden = false; }
+    } catch(e){ orWarn("Couldn't reach OpenRouter. Check your internet connection."); }
+  };
+
+  // Azure section
   const key = $("#azKey"), region = $("#azRegion");
   key.value = cfg.azureKey; region.value = cfg.azureRegion;
   const read = () => ({ azureKey:key.value.trim(), azureRegion:(region.value.trim() || "westeurope").toLowerCase().replace(/\s+/g,"") });
