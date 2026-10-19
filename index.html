@@ -108,6 +108,32 @@ canvas.meter{width:100%;height:36px;display:block;margin-top:10px;border-radius:
 .items .dot{flex:none}
 .soon{border-style:dashed;background:transparent}
 .soon .tag{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--line);border-radius:999px;padding:2px 8px;color:var(--muted);margin-left:6px;vertical-align:middle}
+.brand{flex:1}
+.gear{border:1px solid var(--line);background:var(--surface);border-radius:999px;width:40px;height:40px;font-size:1.1rem;flex:none}
+
+/* Scores (step 2) */
+.good-t{color:var(--good)} .mid-t{color:var(--mid)} .weak-t{color:var(--weak)}
+.totals{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:4px}
+.total{background:var(--bg);border-radius:10px;padding:8px 4px;text-align:center;min-width:0}
+.total b{display:block;font-family:var(--display);font-size:1.5rem;line-height:1.1}
+.total span{font-size:.72rem;color:var(--muted)}
+.focus{border-radius:10px;padding:10px 12px;margin-top:10px;font-size:.95rem}
+.focus.good{background:color-mix(in srgb,var(--good) 14%,transparent)} .focus.mid{background:color-mix(in srgb,var(--mid) 16%,transparent)} .focus.weak{background:var(--rec-soft)}
+.words{display:flex;flex-wrap:wrap;gap:10px 14px;margin-top:12px}
+.word{min-width:0}
+.word .w{font-weight:700;font-size:1.05rem}
+.word .err{font-size:.72rem;color:var(--weak);margin-left:4px}
+.phs{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px}
+.ph{font-family:var(--ipa);font-size:.82rem;border-radius:6px;padding:1px 5px;color:#fff;line-height:1.5}
+.ph.good{background:var(--good)} .ph.mid{background:var(--mid)} .ph.weak{background:var(--weak)}
+.ph small{opacity:.85;font-family:var(--body);margin-left:3px}
+.ph.target{outline:2px solid var(--ink);outline-offset:1px}
+
+/* Settings */
+.field{display:flex;flex-direction:column;gap:4px;margin-top:12px}
+.field input,.field select{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0;width:100%}
+.keyrow{display:flex;gap:8px}
+.keyrow input{flex:1}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:.9rem;z-index:20}
 </style>
 </head>
@@ -116,6 +142,7 @@ canvas.meter{width:100%;height:36px;display:block;margin-top:10px;border-radius:
   <header class="top">
     <button class="back" id="backBtn" hidden>← Sounds</button>
     <h1 class="brand">Accent Lab <small>American English pronunciation</small></h1>
+    <button class="gear" id="gearBtn" aria-label="Settings">⚙</button>
   </header>
   <main id="app"></main>
 </div>
@@ -277,6 +304,93 @@ function startMeter(canvas){
 }
 function stopMeter(canvas){ cancelAnimationFrame(rec.raf); if (rec.ctx) rec.ctx.close().catch(()=>{}); rec.ctx = null; setTimeout(()=>{ canvas.hidden = true; }, 300); }
 
+/* ---------- Settings (API keys live only in this device's localStorage, never in the repo) ---------- */
+const CFG_KEY = "accentlab.settings";
+let cfg = { azureKey:"", azureRegion:"westeurope" };
+try { Object.assign(cfg, JSON.parse(localStorage.getItem(CFG_KEY) || "{}")); } catch(e) {}
+function saveCfg(){ try { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); } catch(e) {} }
+const azureReady = () => !!(cfg.azureKey && cfg.azureRegion);
+
+/* ---------- Step 2: Azure Pronunciation Assessment ----------
+   iPhone records AAC (audio/mp4), which the REST API won't take, so decode it and re-encode as 16 kHz mono WAV first. */
+async function toWav16k(blob){
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const ctx = new AC();
+  let audio;
+  try {
+    const buf = await blob.arrayBuffer();
+    audio = await new Promise((res, rej) => { const p = ctx.decodeAudioData(buf, res, rej); if (p && p.then) p.then(res, rej); });
+  } finally { if (ctx.close) ctx.close().catch(()=>{}); }
+  const n = Math.min(audio.length, audio.sampleRate * 30), chs = audio.numberOfChannels;
+  const mono = new Float32Array(n);
+  for (let c = 0; c < chs; c++){ const d = audio.getChannelData(c); for (let i = 0; i < n; i++) mono[i] += d[i] / chs; }
+  // Downsample to 16 kHz by averaging each window (a simple low-pass)
+  const ratio = audio.sampleRate / 16000, len = Math.floor(n / ratio);
+  const pcm = new Int16Array(len);
+  for (let i = 0; i < len; i++){
+    const a = Math.floor(i * ratio), b = Math.max(a + 1, Math.min(n, Math.floor((i + 1) * ratio)));
+    let sum = 0; for (let j = a; j < b; j++) sum += mono[j];
+    const v = Math.max(-1, Math.min(1, sum / (b - a)));
+    pcm[i] = v < 0 ? v * 0x8000 : v * 0x7FFF;
+  }
+  const out = new DataView(new ArrayBuffer(44 + pcm.length * 2));
+  const str = (o, s) => { for (let i = 0; i < s.length; i++) out.setUint8(o + i, s.charCodeAt(i)); };
+  str(0,"RIFF"); out.setUint32(4, 36 + pcm.length * 2, true); str(8,"WAVE"); str(12,"fmt ");
+  out.setUint32(16,16,true); out.setUint16(20,1,true); out.setUint16(22,1,true);
+  out.setUint32(24,16000,true); out.setUint32(28,32000,true); out.setUint16(32,2,true); out.setUint16(34,16,true);
+  str(36,"data"); out.setUint32(40, pcm.length * 2, true);
+  pcm.forEach((s, i) => out.setInt16(44 + i * 2, s, true));
+  return new Blob([out], {type:"audio/wav"});
+}
+
+async function assessPronunciation(referenceText, blob){
+  const wav = await toWav16k(blob);
+  const params = { ReferenceText:referenceText, GradingSystem:"HundredMark", Granularity:"Phoneme", Dimension:"Comprehensive", EnableMiscue:true };
+  const url = `https://${encodeURIComponent(cfg.azureRegion.trim())}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=en-US&format=detailed`;
+  let r;
+  try {
+    r = await fetch(url, { method:"POST", body:wav, headers:{
+      "Ocp-Apim-Subscription-Key": cfg.azureKey.trim(),
+      "Content-Type": "audio/wav; codecs=audio/pcm; samplerate=16000",
+      "Pronunciation-Assessment": btoa(unescape(encodeURIComponent(JSON.stringify(params)))),
+      "Accept": "application/json" }});
+  } catch(e){ throw new Error("Couldn't reach Azure. Check your internet connection and the region in Settings."); }
+  if (r.status === 401 || r.status === 403) throw new Error("Azure didn't accept the key. Check the key and region in Settings.");
+  if (r.status === 429) throw new Error("The free Azure quota is used up for now. Try again later.");
+  if (!r.ok) throw new Error(`Azure returned an error (${r.status}). Try again.`);
+  return parseAssessment(await r.json());
+}
+
+// Azure gives en-US phonemes in its own spelling (th, dh, ae…); show them as IPA like the rest of the app
+const IPA = {aa:"ɑ",ae:"æ",ah:"ʌ",ao:"ɔ",aw:"aʊ",ax:"ə",ay:"aɪ",b:"b",ch:"tʃ",d:"d",dh:"ð",eh:"ɛ",er:"ɝ",ey:"eɪ",f:"f",g:"g",h:"h",hh:"h",ih:"ɪ",iy:"i",jh:"dʒ",k:"k",l:"l",m:"m",n:"n",ng:"ŋ",ow:"oʊ",oy:"ɔɪ",p:"p",r:"ɹ",s:"s",sh:"ʃ",t:"t",th:"θ",uh:"ʊ",uw:"u",v:"v",w:"w",y:"j",z:"z",zh:"ʒ"};
+// Which scored phonemes belong to each sound page (Azure has no separate flap, so flap t is scored as t)
+const TARGET = {"th-voiceless":["θ"],"th-voiced":["ð"],"r":["ɹ","ɝ"],"ae":["æ"],"ih-ee":["ɪ","i"],"uh":["ʌ"],"ah":["ɑ"],"schwa":["ə"],"flap-t":["t","ɾ"],"v-w":["v","w"],"ng":["ŋ"],"dark-l":["l","ɫ"],"oo":["ʊ","u"]};
+
+function parseAssessment(j){
+  const best = j.NBest && j.NBest[0];
+  if (j.RecognitionStatus !== "Success" || !best) throw new Error("Azure couldn't hear any speech. Hold the phone closer and try again.");
+  const pa = o => o.PronunciationAssessment || o;
+  const round = v => Math.round(v || 0);
+  return {
+    pron: round(pa(best).PronScore), accuracy: round(pa(best).AccuracyScore),
+    fluency: round(pa(best).FluencyScore), completeness: round(pa(best).CompletenessScore),
+    heard: j.DisplayText || "",
+    words: (best.Words || []).map(w => ({
+      word: w.Word, score: round(pa(w).AccuracyScore), error: pa(w).ErrorType || "None",
+      phonemes: (w.Phonemes || []).map(p => ({ ph: IPA[String(p.Phoneme).toLowerCase()] || p.Phoneme, score: round(pa(p).AccuracyScore) }))
+    }))
+  };
+}
+const band = v => v >= 80 ? "good" : v >= 60 ? "mid" : "weak";
+const BAND_TEXT = {good:"Got it", mid:"Getting there", weak:"Needs work"};
+
+// Plain-text summary of a result; used by "Copy for Claude" now and by the AI tutor in step 3
+function scoreSummary(res){
+  const lines = [`Azure scores (0-100): overall ${res.pron}, accuracy ${res.accuracy}, fluency ${res.fluency}, completeness ${res.completeness}.`];
+  res.words.forEach(w => lines.push(`- "${w.word}": ${w.score}${w.error !== "None" ? ` (${w.error})` : ""}; sounds: ${w.phonemes.map(p => `/${p.ph}/ ${p.score}`).join(", ")}`));
+  return lines.join("\n");
+}
+
 /* ---------- UI helpers ---------- */
 const $ = (s, el=document) => el.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -331,9 +445,9 @@ function renderSound(s){
           <div class="rate" id="rate">${RATES.map(([k,t])=>`<button class="${k}" data-r="${k}" aria-pressed="false">${t}</button>`).join("")}</div></div>
       </section>
 
-      <section class="card soon" aria-label="Pronunciation score">
-        <h2>Pronunciation score <span class="tag">Step 2 · Azure</span></h2>
-        <p class="note">After each recording, scores for every sound and word will appear here, with the weak sounds highlighted.</p>
+      <section class="card" aria-label="Pronunciation score" aria-live="polite">
+        <h2>Pronunciation score</h2>
+        <div id="score"></div>
       </section>
 
       <section class="card">
@@ -386,8 +500,44 @@ function renderSound(s){
     $("#items").innerHTML = s.items.map((t,i)=>`<li><button data-i="${i}" aria-current="${i===idx}"><span>${esc(t)}</span><span class="dot ${getRating(s.id,i)||""}"></span></button></li>`).join("");
     $("#items").querySelectorAll("[data-i]").forEach(b => b.onclick = () => { idx = +b.dataset.i; resetTake(); paint(); window.scrollTo({top:0,behavior:"smooth"}); });
   }
-  function resetTake(){ player.removeAttribute("src"); $("#mine").disabled = $("#compare").disabled = true; }
-  function haveTake(url){ player.src = url; $("#mine").disabled = $("#compare").disabled = false; }
+  let take = 0, lastResult = null;   // take guards against a slow score landing on a different item
+  function resetTake(){ take++; lastResult = null; player.removeAttribute("src"); $("#mine").disabled = $("#compare").disabled = true; paintScore(); }
+  function haveTake(url, blob){ player.src = url; $("#mine").disabled = $("#compare").disabled = false; scoreTake(blob); }
+
+  function paintScore(state){
+    const box = $("#score");
+    if (!azureReady()){ box.innerHTML = `<p class="note">Add your Azure key in <a href="#settings">Settings</a> to get a score for every sound after each recording.</p>`; return; }
+    if (!state){ box.innerHTML = `<p class="note">Record yourself and your scores will appear here: every word and sound, with weak sounds in red.</p>`; return; }
+    if (state.loading){ box.innerHTML = `<p class="note">Scoring…</p>`; return; }
+    if (state.error){ box.innerHTML = `<div class="warn">${esc(state.error)}</div>`; return; }
+    const res = state.result, targets = TARGET[s.id] || [];
+    const hits = res.words.flatMap(w => w.phonemes).filter(p => targets.includes(p.ph));
+    const weak = res.words.flatMap(w => w.phonemes.filter(p => p.score < 60).map(p => ({...p, word:w.word}))).sort((a,b) => a.score - b.score);
+    let focus = "";
+    if (hits.length){
+      const avg = Math.round(hits.reduce((t,p) => t + p.score, 0) / hits.length);
+      focus = `<div class="focus ${band(avg)}">Your <span class="ipa">/${esc(targets.filter(t => hits.some(h => h.ph === t)).join("/ /"))}/</span>: <b>${avg}</b> · ${BAND_TEXT[band(avg)]}</div>`;
+    }
+    box.innerHTML = `
+      <div class="totals">${[["Overall",res.pron],["Accuracy",res.accuracy],["Fluency",res.fluency],["Complete",res.completeness]].map(([k,v]) =>
+        `<div class="total"><b class="${band(v)}-t">${v}</b><span>${k}</span></div>`).join("")}</div>
+      ${focus}
+      <div class="words">${res.words.map(w => `
+        <div class="word"><span class="w ${band(w.score)}-t">${esc(w.word)}</span>${w.error !== "None" ? `<span class="err">${esc(w.error === "Omission" ? "missed" : w.error === "Insertion" ? "extra" : w.error.toLowerCase())}</span>` : ""}
+          <div class="phs">${w.phonemes.map(p => `<span class="ph ${band(p.score)}${targets.includes(p.ph) ? " target" : ""}">${esc(p.ph)}<small>${p.score}</small></span>`).join("")}</div></div>`).join("")}
+      </div>
+      <p class="note">${weak.length ? `Weakest sounds: ${weak.slice(0,4).map(p => `<span class="ipa">/${esc(p.ph)}/</span> in “${esc(p.word)}” (${p.score})`).join(", ")}.` : "No weak sounds in this take. Nice."} Outlined = this page's sound.</p>`;
+  }
+  async function scoreTake(blob){
+    if (!azureReady() || !blob) return;
+    const mine = ++take, item = s.items[idx];
+    paintScore({loading:true});
+    try {
+      const result = await assessPronunciation(item, blob);
+      if (mine !== take) return;
+      lastResult = result; paintScore({result});
+    } catch(e){ if (mine === take) paintScore({error: e.message || "Scoring failed. Try again."}); }
+  }
 
   $("#prev").onclick = () => { idx = (idx - 1 + s.items.length) % s.items.length; resetTake(); paint(); };
   $("#next").onclick = () => { idx = (idx + 1) % s.items.length; resetTake(); paint(); };
@@ -398,30 +548,82 @@ function renderSound(s){
     const btn = e.currentTarget;
     if (rec.mr && rec.mr.state === "recording") { stopRec(btn); return; }
     speechSynthesis && speechSynthesis.cancel();
-    startRec(btn, $("#meter"), blob => { haveTake(rec.url); /* Step 2: send blob to Azure here */ });
+    startRec(btn, $("#meter"), blob => haveTake(rec.url, blob));
   };
-  $("#upload").onchange = e => { const f = e.target.files[0]; if (f){ if (rec.url) URL.revokeObjectURL(rec.url); rec.url = URL.createObjectURL(f); haveTake(rec.url); } };
+  $("#upload").onchange = e => { const f = e.target.files[0]; if (f){ if (rec.url) URL.revokeObjectURL(rec.url); rec.url = URL.createObjectURL(f); haveTake(rec.url, f); } };
   $("#mine").onclick = () => { speechSynthesis && speechSynthesis.cancel(); player.currentTime = 0; player.play(); };
   $("#compare").onclick = () => speak(s.items[idx], () => setTimeout(() => { player.currentTime = 0; player.play(); }, 350));
   $("#rate").querySelectorAll("button").forEach(b => b.onclick = () => { setRating(s.id, idx, b.dataset.r); paint(); });
   $("#app").querySelectorAll("[data-say]").forEach(b => b.onclick = () => speak(b.dataset.say));
   $("#copy").onclick = async () => {
     const item = s.items[idx], r = getRating(s.id, idx);
-    const text = `I'm practicing American English pronunciation of the sound /${s.sym}/ (${s.name}).\nTarget: "${item}"\nMy own rating: ${r ? RATES.find(x=>x[0]===r)[1] : "not rated yet"}.\nPlease give me one short tip on mouth and tongue position, then 3 quick drills (minimal pairs or short sentences) for this sound.`;
+    const text = `I'm practicing American English pronunciation of the sound /${s.sym}/ (${s.name}).\nTarget: "${item}"\nMy own rating: ${r ? RATES.find(x=>x[0]===r)[1] : "not rated yet"}.\n${lastResult ? scoreSummary(lastResult) + "\n" : ""}Please give me one short tip on mouth and tongue position, then 3 quick drills (minimal pairs or short sentences) for this sound.`;
     try { await navigator.clipboard.writeText(text); toast("Copied. Paste it into Claude."); }
     catch(e){ toast("Couldn't copy automatically."); }
   };
   paint();
+  paintScore();
+  window.scrollTo(0,0);
+}
+
+/* ---------- Settings page ---------- */
+function renderSettings(){
+  $("#backBtn").hidden = false;
+  $("#app").innerHTML = `
+    <div class="stack">
+      <section class="card">
+        <h2>Azure speech scoring</h2>
+        <p class="note" style="margin:0">Paste KEY 1 and the region from your Speech resource (Azure portal → your resource → Keys and Endpoint).</p>
+        <label class="field"><span class="label">Key</span>
+          <span class="keyrow"><input type="password" id="azKey" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Paste KEY 1">
+          <button class="btn btn-ghost" id="showKey" type="button" style="min-height:0;padding:8px 12px">Show</button></span></label>
+        <label class="field"><span class="label">Region</span>
+          <input id="azRegion" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="westeurope"></label>
+        <div class="controls">
+          <button class="btn btn-rec" id="saveAz">Save</button>
+          <button class="btn btn-listen" id="checkAz">Check key</button>
+        </div>
+        <div class="warn" id="warn" hidden></div>
+        <p class="note">The key is saved only on this device. It is never put in the app's code or on GitHub.</p>
+        <div class="row"><button class="btn btn-ghost" id="clearAz">Remove key from this device</button></div>
+      </section>
+      <section class="card soon">
+        <h2>AI tutor <span class="tag">Step 3</span></h2>
+        <p class="note">The Claude key will go here.</p>
+      </section>
+    </div>`;
+  const key = $("#azKey"), region = $("#azRegion");
+  key.value = cfg.azureKey; region.value = cfg.azureRegion;
+  const read = () => ({ azureKey:key.value.trim(), azureRegion:(region.value.trim() || "westeurope").toLowerCase().replace(/\s+/g,"") });
+  $("#showKey").onclick = e => { const hid = key.type === "password"; key.type = hid ? "text" : "password"; e.currentTarget.textContent = hid ? "Hide" : "Show"; };
+  $("#saveAz").onclick = () => { Object.assign(cfg, read()); saveCfg(); region.value = cfg.azureRegion; toast(cfg.azureKey ? "Saved on this device." : "Saved. No key yet."); };
+  $("#clearAz").onclick = () => { if (!confirm("Remove the Azure key from this device?")) return; cfg.azureKey = ""; saveCfg(); key.value = ""; toast("Key removed."); };
+  $("#checkAz").onclick = async () => {
+    const c = read(), w = $("#warn");
+    if (!c.azureKey){ showWarn("Paste the key first."); return; }
+    w.hidden = true; toast("Checking…");
+    try {
+      const r = await fetch(`https://${encodeURIComponent(c.azureRegion)}.api.cognitive.microsoft.com/sts/v1.0/issueToken`, { method:"POST", headers:{ "Ocp-Apim-Subscription-Key": c.azureKey } });
+      if (r.ok){ Object.assign(cfg, c); saveCfg(); toast("The key works. Saved."); }
+      else showWarn(r.status === 401 ? "Azure says the key doesn't match this region. Check both and try again." : `Azure answered with an error (${r.status}).`);
+    } catch(e){ showWarn("Couldn't reach Azure. Check the region spelling (for example westeurope) and your internet connection."); }
+  };
   window.scrollTo(0,0);
 }
 
 /* ---------- Router ---------- */
 function route(){
   if (rec.mr && rec.mr.state === "recording") rec.mr.stop();
-  const s = SOUNDS.find(x => x.id === location.hash.slice(1));
+  const id = location.hash.slice(1);
+  $("#gearBtn").hidden = id === "settings";
+  if (id === "settings") return renderSettings();
+  const s = SOUNDS.find(x => x.id === id);
+  lastSound = s ? id : "";
   s ? renderSound(s) : renderHome();
 }
-$("#backBtn").onclick = () => { location.hash = ""; };
+let lastSound = "";   // so Back from Settings returns to the sound you came from
+$("#backBtn").onclick = () => { location.hash = location.hash === "#settings" ? lastSound : ""; };
+$("#gearBtn").onclick = () => { location.hash = "settings"; };
 window.addEventListener("hashchange", route);
 route();
 </script>

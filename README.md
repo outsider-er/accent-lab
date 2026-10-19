@@ -8,6 +8,14 @@ A personal web app for practicing American English pronunciation on iPhone (Safa
 - Ratings are saved on the device (localStorage).
 - Recording needs the app to be opened from an https address (for example GitHub Pages). Opened as a local file, it offers a voice-memo upload instead.
 
+## Pronunciation scores (step 2)
+- After each recording, the take is sent to Azure AI Speech Pronunciation Assessment (en-US) and the "Pronunciation score" card shows overall, accuracy, fluency and completeness, plus a score for every word and every sound. Weak sounds are red, and the sound of the current page is outlined.
+- iPhone Safari records AAC (audio/mp4), which the Azure REST API doesn't accept, so the app converts each take to 16 kHz mono WAV in the browser (max 30 s) before sending it.
+- Setup: create a Speech resource in the Azure portal (Free F0 tier, 5 audio hours a month), then open the app, tap ⚙ Settings, paste KEY 1 and the region (for example `westeurope`), and tap Check key.
+
+## API keys
+There is no server. Keys are typed into the app's Settings screen and stored only in that device's localStorage. Never put keys in `index.html` or anywhere in this repo: the repo is public.
+
 ## Tongue animations
 Put one GIF per sound in the `gifs/` folder, named after the sound id. The app shows it automatically; if the file is missing, it shows a placeholder.
 
@@ -28,6 +36,4 @@ Put one GIF per sound in the `gifs/` folder, named after the sound id. The app s
 | full vs fool | gifs/oo.gif |
 
 ## Still to do
-- Step 2: send each recording to Azure Pronunciation Assessment (en-US) and show phoneme scores in the "Pronunciation score" card. The hook is marked `Step 2` in `index.html`, inside the Record button handler.
-- Step 3: AI tutor that reads the scores and gives tips and drills. Placeholder card is marked `Step 3`. For now a "Copy for Claude" button copies a ready-made prompt.
-- API keys must not be put in the page itself; steps 2 and 3 need a small server-side piece to hold them.
+- Step 3: AI tutor (Claude API, called from the browser) that reads the Azure scores and gives a tip plus 2-3 drills. Placeholder card is marked `Step 3`. For now a "Copy for Claude" button copies a ready-made prompt, including the latest scores; `scoreSummary()` in `index.html` builds that text.
