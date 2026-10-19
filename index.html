@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Accent Lab">
+<title>Accent Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&family=Noto+Sans:wght@400;600&display=swap">
+<style>
+/* Layout: phone-first single column. Home = grid of sound tiles; Sound = practice card on top, then how-to, GIF slot, pairs, and future score/tutor slots. */
+:root{
+  --bg:#F2F4F7; --surface:#FFFFFF; --ink:#141B26; --muted:#5A6577; --line:#DCE1E8;
+  --listen:#3348C8; --listen-soft:#E6E9FA;
+  --rec:#D93A3F; --rec-soft:#FBE7E7;
+  --good:#1E8A57; --mid:#B7791F; --weak:#C2413F;
+  --display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", -apple-system, system-ui, sans-serif;
+  --ipa:"Noto Sans", "Lucida Grande", "Segoe UI", sans-serif;
+  --r:14px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0F141C; --surface:#18202B; --ink:#E9EDF3; --muted:#9AA6B8; --line:#2A3442;
+    --listen:#8D9CFF; --listen-soft:#232B4A; --rec:#FF6B6F; --rec-soft:#3A1F23;
+    --good:#4CC88A; --mid:#E3A94A; --weak:#F07775; color-scheme:dark; }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--body);-webkit-text-size-adjust:100%;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible{outline:3px solid var(--listen);outline-offset:2px}
+.wrap{max-width:720px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 40px}
+header.top{display:flex;align-items:center;gap:12px;padding-block:8px 16px}
+.brand{font-family:var(--display);font-weight:700;font-size:1.35rem;letter-spacing:-.01em;margin:0}
+.brand small{display:block;font:400 .8rem/1.2 var(--body);color:var(--muted);letter-spacing:0}
+.back{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;font-size:.9rem}
+h2{font-family:var(--display);font-weight:700;font-size:1.15rem;margin:0 0 8px;text-wrap:balance}
+.label{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+.ipa{font-family:var(--ipa)}
+
+/* Home */
+.intro{color:var(--muted);margin:0 0 16px;max-width:60ch}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.tile{display:flex;flex-direction:column;gap:2px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;min-width:0}
+.tile .sym{font-family:var(--ipa);font-size:2rem;line-height:1.1}
+.tile .name{font-weight:700}
+.tile .ex{color:var(--muted);font-size:.9rem}
+.dots{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--line)}
+.dot.good{background:var(--good)} .dot.mid{background:var(--mid)} .dot.weak{background:var(--weak)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:.85rem;margin-top:14px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+
+/* Sound page */
+.hero{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+.hero .sym{font-family:var(--ipa);font-size:3.2rem;line-height:1}
+.hero .name{font-family:var(--display);font-size:1.4rem;font-weight:700}
+.stack{display:flex;flex-direction:column;gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;min-width:0}
+.practice{border-width:2px;border-color:var(--ink)}
+.target{font-family:var(--display);font-size:1.7rem;line-height:1.25;font-weight:500;margin:6px 0 2px;text-wrap:balance}
+.target mark{background:var(--listen-soft);color:inherit;border-radius:4px;padding:0 2px}
+.counter{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.nav{display:flex;gap:6px}
+.icon{border:1px solid var(--line);background:transparent;border-radius:10px;width:40px;height:40px;font-size:1.1rem}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.btn{border:0;border-radius:12px;padding:14px 10px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px}
+.btn-listen{background:var(--listen-soft);color:var(--listen)}
+.btn-rec{background:var(--rec);color:#fff}
+.btn-rec.on{animation:pulse 1.2s ease-in-out infinite}
+.btn-ghost{background:transparent;border:1px solid var(--line)}
+.btn[disabled]{opacity:.45;cursor:default}
+@keyframes pulse{50%{box-shadow:0 0 0 8px var(--rec-soft)}}
+@media (prefers-reduced-motion:reduce){.btn-rec.on{animation:none}}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.toggle{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:.9rem}
+canvas.meter{width:100%;height:36px;display:block;margin-top:10px;border-radius:8px;background:var(--bg)}
+.note{font-size:.88rem;color:var(--muted);margin:8px 0 0}
+.warn{background:var(--rec-soft);border-radius:10px;padding:10px 12px;font-size:.9rem;margin-top:10px}
+.rate{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.rate button{border:1px solid var(--line);background:transparent;border-radius:10px;padding:10px 4px;font-size:.88rem}
+.rate button[aria-pressed="true"].weak{background:var(--weak);border-color:var(--weak);color:#fff}
+.rate button[aria-pressed="true"].mid{background:var(--mid);border-color:var(--mid);color:#fff}
+.rate button[aria-pressed="true"].good{background:var(--good);border-color:var(--good);color:#fff}
+
+.howto{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+@media (min-width:600px){.howto{grid-template-columns:200px minmax(0,1fr)}}
+.gif{aspect-ratio:1;max-width:100%;border-radius:12px;background:repeating-linear-gradient(45deg,var(--bg) 0 10px,var(--surface) 10px 20px);border:1px dashed var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:12px;color:var(--muted);font-size:.82rem;overflow:hidden}
+.gif img{width:100%;height:100%;object-fit:contain;border-radius:10px}
+.gif code{font-size:.78rem;word-break:break-all}
+.steps{margin:0;padding-left:1.2em}
+.steps li{margin-bottom:6px}
+.avoid{margin-top:8px;font-size:.92rem}
+.avoid b{color:var(--weak)}
+.pairs{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.pair{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.pair button{flex:1;border:0;background:transparent;padding:10px 6px;font-weight:700}
+.pair button+button{border-left:1px solid var(--line)}
+.pair button:active{background:var(--listen-soft)}
+.items{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.items button{width:100%;text-align:left;border:1px solid var(--line);background:transparent;border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.items button[aria-current="true"]{border-color:var(--ink);border-width:2px}
+.items .dot{flex:none}
+.soon{border-style:dashed;background:transparent}
+.soon .tag{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--line);border-radius:999px;padding:2px 8px;color:var(--muted);margin-left:6px;vertical-align:middle}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:.9rem;z-index:20}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <button class="back" id="backBtn" hidden>← Sounds</button>
+    <h1 class="brand">Accent Lab <small>American English pronunciation</small></h1>
+  </header>
+  <main id="app"></main>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+/* ---------- Content: the sounds ---------- */
+const SOUNDS = [
+ {id:"th-voiceless", sym:"θ", name:"th as in think", ex:"think, three, bath",
+  steps:["Put the tip of your tongue lightly between your teeth, or just behind the top ones.","Blow air out over the tongue. Keep your voice off, like a soft hiss.","Keep the tongue relaxed and let the air flow. Don't press and pop it."],
+  avoid:"Don't let it turn into s (sink) or t (tink).",
+  pairs:[["think","sink"],["three","tree"],["mouth","mouse"],["thank","tank"]],
+  items:["think","three","month","bathroom","Thank you for the birthday gift.","I think three thousand is enough."]},
+ {id:"th-voiced", sym:"ð", name:"th as in this", ex:"this, the, mother",
+  steps:["Same tongue position as θ: tip lightly between your teeth.","Now turn your voice on. Put a finger on your throat and feel it buzz.","Keep it short and soft in little words like the and this."],
+  avoid:"Don't let it turn into d (dis) or z (zis).",
+  pairs:[["they","day"],["then","den"],["breathe","breeze"],["those","doze"]],
+  items:["the","this","mother","together","This is the other brother.","They gathered there together."]},
+ {id:"r", sym:"ɹ", name:"American r", ex:"red, car, very",
+  steps:["Pull your tongue back and curl the tip up slightly, or bunch the middle of the tongue up.","Don't let the tongue touch the roof of your mouth.","Round your lips a little and keep your voice on. The sound is smooth, with no tap or roll."],
+  avoid:"Don't tap or roll it. Pronounce the r at the end of words too: car, here, better.",
+  pairs:[["right","light"],["red","led"],["rock","lock"],["berry","belly"]],
+  items:["red","right","car","very","Really, the red car is right there.","Rory wrote a very rare report."]},
+ {id:"ae", sym:"æ", name:"a as in cat", ex:"cat, bad, apple",
+  steps:["Open your jaw wide, wider than for e in bed.","Push the tongue low and forward. The tip rests behind the bottom teeth.","Spread your lips a little. The sound is between e (bed) and a (father)."],
+  avoid:"Don't say it like e (bed): bad and bed must sound different.",
+  pairs:[["bad","bed"],["man","men"],["cat","cut"],["had","head"]],
+  items:["cat","apple","man","bag","The black cat sat on a mat.","Pam has a bad back after the match."]},
+ {id:"ih-ee", sym:"ɪ · i", name:"ship vs sheep", ex:"ship, sheep, live, leave",
+  steps:["For i (sheep): smile, tongue high and tense, hold it a little longer.","For ɪ (ship): relax your lips and tongue, drop the tongue a little, keep it short.","Practice switching between the two in pairs."],
+  avoid:"Don't use the same vowel for both. Sit and seat should not rhyme.",
+  pairs:[["ship","sheep"],["live","leave"],["sit","seat"],["fill","feel"]],
+  items:["ship","sheep","live","leave","Did he leave or live here?","This sheep is on the ship."]},
+ {id:"uh", sym:"ʌ", name:"u as in cup", ex:"cup, love, son",
+  steps:["Relax your whole mouth, jaw half open.","Keep the tongue in the middle, neither high nor low.","Make it short, like a quick 'uh'."],
+  avoid:"Don't round your lips into o, and don't open to a wide a.",
+  pairs:[["cup","cap"],["hut","hot"],["luck","lock"],["bun","ban"]],
+  items:["cup","love","son","money","My son loves summer fun.","Just come up for a cup."]},
+ {id:"ah", sym:"ɑ", name:"o as in hot", ex:"hot, father, stop",
+  steps:["Open your mouth wide, as for a doctor saying 'say ah'.","Keep the lips relaxed and unrounded.","Let it be a little long and open."],
+  avoid:"In American English, hot is not said with round lips like British 'hot'.",
+  pairs:[["hot","hut"],["cot","cut"],["not","nut"],["lock","luck"]],
+  items:["hot","stop","box","father","Bob got a lot of top jobs.","Stop the clock on the dot."]},
+ {id:"schwa", sym:"ə", name:"schwa, the lazy vowel", ex:"about, banana, the",
+  steps:["Relax everything: lips, tongue, jaw. Open only a little.","Make it very short and quiet, a tiny 'uh'.","It appears in unstressed syllables, so stress the strong syllable and let the others shrink."],
+  avoid:"Don't pronounce every vowel fully. ba-NA-na is closer to bə-NÆ-nə.",
+  pairs:[["photograph","photography"],["Canada","Canadian"],["economy","economic"]],
+  items:["about","banana","problem","today","I'd like a banana and a coffee.","What do you want to do today?"]},
+ {id:"flap-t", sym:"ɾ", name:"flap t as in water", ex:"water, city, better",
+  steps:["When t is between two vowels and the next syllable is unstressed, Americans tap it.","Touch the ridge behind your top teeth once, very quickly.","It sounds like a light, fast d: water is close to 'wader'."],
+  avoid:"Don't make a strong, airy t in the middle of words like better or city.",
+  pairs:[["water","waiter"],["city","pretty"],["better","butter"]],
+  items:["water","city","better","a lot of","Get a better bottle of water.","Put it on a little metal plate."]},
+ {id:"v-w", sym:"v · w", name:"vest vs west", ex:"very, wine, west",
+  steps:["For v: rest your top teeth on your bottom lip and buzz.","For w: round your lips like a small o, with no teeth touching, then open into the vowel.","Look in a mirror: teeth visible for v, none for w."],
+  avoid:"Don't use the same sound for both. Wine and vine are different words.",
+  pairs:[["vest","west"],["vine","wine"],["veil","whale"],["vet","wet"]],
+  items:["very","west","wine","village","We have very wet weather.","Vivian wants a warm vest."]},
+ {id:"ng", sym:"ŋ", name:"ng as in sing", ex:"sing, long, thing",
+  steps:["Raise the back of your tongue to the soft part at the back of the roof of your mouth.","Let the air come out through your nose.","Stop there. Don't add a hard g or k at the end."],
+  avoid:"Don't say 'sing-g' or 'thin-k'.",
+  pairs:[["sin","sing"],["thin","thing"],["ran","rang"],["ban","bang"]],
+  items:["sing","long","thing","morning","The king is singing a long song.","Bring the thing along."]},
+ {id:"dark-l", sym:"ɫ", name:"dark l as in feel", ex:"feel, milk, all",
+  steps:["Put the tip of your tongue on the ridge behind your top teeth.","At the same time, pull the back of the tongue up and back.","It sounds deeper, a bit like 'uhl'. Use it at the ends of words and before consonants."],
+  avoid:"Don't drop the tongue tip and turn it into a w or o (fee-w, mi-wk).",
+  pairs:[["fee","feel"],["sea","seal"],["tie","tile"],["bow","bowl"]],
+  items:["feel","milk","all","little","I feel well after a full meal.","Call Bill about the bill."]},
+ {id:"oo", sym:"ʊ · u", name:"full vs fool", ex:"look, full, pool",
+  steps:["For u (fool): round your lips tightly, tongue high at the back, hold it a little longer.","For ʊ (full): loosen the lips and tongue, keep it short.","Feel the difference in tension between the two."],
+  avoid:"Don't make look and Luke sound the same.",
+  pairs:[["full","fool"],["pull","pool"],["look","Luke"],["could","cooed"]],
+  items:["look","good","pool","should","Look, the pool is full.","Would you put the book down?"]}
+];
+
+/* ---------- Storage (ratings per item) ---------- */
+const KEY = "accentlab.v1";
+let store = {};
+try { store = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch(e) { store = {}; }
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(store)); } catch(e) {} }
+function getRating(sid, i){ return (store[sid] && store[sid][i]) || null; }
+function setRating(sid, i, r){ store[sid] = store[sid] || {}; store[sid][i] = r; save(); }
+
+/* ---------- Model voice (built into the phone; Azure voices can replace this later) ---------- */
+let voice = null;
+function pickVoice(){
+  const vs = (window.speechSynthesis && speechSynthesis.getVoices()) || [];
+  const us = vs.filter(v => /en[-_]US/i.test(v.lang));
+  voice = us.find(v => /Samantha|Ava|Allison|Google US/i.test(v.name)) || us[0] || vs.find(v=>/^en/i.test(v.lang)) || null;
+}
+if (window.speechSynthesis){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+let slow = false;
+function speak(text, onend){
+  if (!window.speechSynthesis){ toast("This browser has no built-in voice."); return; }
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "en-US"; if (voice) u.voice = voice;
+  u.rate = slow ? 0.7 : 0.95;
+  if (onend) u.onend = onend;
+  speechSynthesis.speak(u);
+}
+
+/* ---------- Recorder ---------- */
+const rec = { stream:null, mr:null, chunks:[], url:null, ctx:null, raf:0, timer:0 };
+function micProblem(){
+  if (location.protocol === "file:") return "The microphone only works when the app is opened from a web address (https). Once it is online, recording will work. For now you can add a voice memo instead.";
+  if (!navigator.mediaDevices || !window.MediaRecorder) return "This browser can't record here. Try Safari on iPhone, or add a voice memo instead.";
+  return null;
+}
+async function startRec(btn, canvas, onDone){
+  try {
+    rec.stream = await navigator.mediaDevices.getUserMedia({audio:true});
+  } catch(e){
+    showWarn("Microphone access was blocked. On iPhone: Settings → Safari → Microphone → Allow, then reload."); return;
+  }
+  rec.chunks = [];
+  const type = ["audio/mp4","audio/webm;codecs=opus","audio/webm"].find(t => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t));
+  rec.mr = type ? new MediaRecorder(rec.stream, {mimeType:type}) : new MediaRecorder(rec.stream);
+  rec.mr.ondataavailable = e => { if (e.data && e.data.size) rec.chunks.push(e.data); };
+  rec.mr.onstop = () => {
+    const blob = new Blob(rec.chunks, {type: rec.mr.mimeType || "audio/mp4"});
+    if (rec.url) URL.revokeObjectURL(rec.url);
+    rec.url = URL.createObjectURL(blob);
+    rec.stream.getTracks().forEach(t => t.stop());
+    stopMeter(canvas);
+    onDone(blob);
+  };
+  rec.mr.start();
+  btn.classList.add("on"); btn.textContent = "■ Stop";
+  startMeter(canvas);
+  rec.timer = setTimeout(() => stopRec(btn), 15000);
+}
+function stopRec(btn){
+  clearTimeout(rec.timer);
+  if (rec.mr && rec.mr.state === "recording") rec.mr.stop();
+  btn.classList.remove("on"); btn.textContent = "● Record";
+}
+function startMeter(canvas){
+  try {
+    rec.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const src = rec.ctx.createMediaStreamSource(rec.stream);
+    const an = rec.ctx.createAnalyser(); an.fftSize = 512; src.connect(an);
+    const data = new Uint8Array(an.fftSize);
+    const g = canvas.getContext("2d");
+    const color = getComputedStyle(document.documentElement).getPropertyValue("--rec").trim();
+    const hist = [];
+    const draw = () => {
+      an.getByteTimeDomainData(data);
+      let peak = 0; for (const v of data) peak = Math.max(peak, Math.abs(v - 128));
+      hist.push(peak / 128); if (hist.length > 80) hist.shift();
+      const w = canvas.width = canvas.clientWidth * devicePixelRatio, h = canvas.height = canvas.clientHeight * devicePixelRatio;
+      g.clearRect(0,0,w,h); g.fillStyle = color;
+      const bw = w / 80;
+      hist.forEach((p,i) => { const bh = Math.max(2, p * h * 1.6); g.fillRect(i*bw, (h-bh)/2, bw*0.6, Math.min(h,bh)); });
+      rec.raf = requestAnimationFrame(draw);
+    };
+    canvas.hidden = false; draw();
+  } catch(e) {}
+}
+function stopMeter(canvas){ cancelAnimationFrame(rec.raf); if (rec.ctx) rec.ctx.close().catch(()=>{}); rec.ctx = null; setTimeout(()=>{ canvas.hidden = true; }, 300); }
+
+/* ---------- UI helpers ---------- */
+const $ = (s, el=document) => el.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let toastT;
+function toast(msg){ const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(()=>t.hidden = true, 2200); }
+function showWarn(msg){ const w = $("#warn"); if (w){ w.textContent = msg; w.hidden = false; } }
+const RATES = [["weak","Needs work"],["mid","Getting there"],["good","Got it"]];
+
+/* ---------- Home ---------- */
+function renderHome(){
+  $("#backBtn").hidden = true;
+  $("#app").innerHTML = `
+    <p class="intro">Pick a sound. Listen to the model, record yourself, and compare. Each dot is one practice item, colored by how you rated it.</p>
+    <div class="grid">${SOUNDS.map(s => `
+      <button class="tile" data-go="${s.id}">
+        <span class="sym">${s.sym}</span>
+        <span class="name">${esc(s.name)}</span>
+        <span class="ex">${esc(s.ex)}</span>
+        <span class="dots" aria-hidden="true">${s.items.map((_,i)=>`<span class="dot ${getRating(s.id,i)||""}"></span>`).join("")}</span>
+      </button>`).join("")}
+    </div>
+    <div class="legend"><span><i class="dot weak"></i>Needs work</span><span><i class="dot mid"></i>Getting there</span><span><i class="dot good"></i>Got it</span><span><i class="dot"></i>Not tried</span></div>`;
+  $("#app").querySelectorAll("[data-go]").forEach(b => b.onclick = () => { location.hash = b.dataset.go; });
+  window.scrollTo(0,0);
+}
+
+/* ---------- Sound page ---------- */
+function renderSound(s){
+  $("#backBtn").hidden = false;
+  let idx = 0;
+  $("#app").innerHTML = `
+    <div class="hero"><span class="sym">${s.sym}</span><span class="name">${esc(s.name)}</span></div>
+    <div class="stack">
+      <section class="card practice" aria-label="Practice">
+        <div class="counter"><span class="label" id="count"></span>
+          <div class="nav"><button class="icon" id="prev" aria-label="Previous">‹</button><button class="icon" id="next" aria-label="Next">›</button></div></div>
+        <p class="target" id="target"></p>
+        <div class="controls">
+          <button class="btn btn-listen" id="listen">▶ Listen</button>
+          <button class="btn btn-rec" id="rec">● Record</button>
+          <button class="btn btn-ghost" id="mine" disabled>Play mine</button>
+          <button class="btn btn-ghost" id="compare" disabled>Model, then me</button>
+        </div>
+        <canvas class="meter" id="meter" hidden></canvas>
+        <div class="row">
+          <label class="toggle"><input type="checkbox" id="slow"> Slow voice</label>
+          <label class="toggle" id="uploadWrap" hidden>or <input type="file" id="upload" accept="audio/*"></label>
+        </div>
+        <div class="warn" id="warn" hidden></div>
+        <audio id="player" playsinline></audio>
+        <div style="margin-top:14px"><span class="label">How did it sound?</span>
+          <div class="rate" id="rate">${RATES.map(([k,t])=>`<button class="${k}" data-r="${k}" aria-pressed="false">${t}</button>`).join("")}</div></div>
+      </section>
+
+      <section class="card soon" aria-label="Pronunciation score">
+        <h2>Pronunciation score <span class="tag">Step 2 · Azure</span></h2>
+        <p class="note">After each recording, scores for every sound and word will appear here, with the weak sounds highlighted.</p>
+      </section>
+
+      <section class="card">
+        <h2>How to make it</h2>
+        <div class="howto">
+          <div class="gif" id="gif">
+            <img alt="Animation of tongue and lip position for ${esc(s.name)}" src="gifs/${s.id}.gif" hidden>
+            <span id="gifEmpty">Tongue animation goes here<br><code>gifs/${s.id}.gif</code></span>
+          </div>
+          <div style="min-width:0">
+            <ol class="steps">${s.steps.map(t=>`<li>${esc(t)}</li>`).join("")}</ol>
+            <p class="avoid"><b>Avoid:</b> ${esc(s.avoid)}</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Hear the difference</h2>
+        <p class="note" style="margin:0 0 10px">Tap each word. The two should sound different.</p>
+        <div class="pairs">${s.pairs.map(p=>`<div class="pair">${p.map(w=>`<button data-say="${esc(w)}">${esc(w)}</button>`).join("")}</div>`).join("")}</div>
+      </section>
+
+      <section class="card">
+        <h2>All practice items</h2>
+        <ul class="items" id="items"></ul>
+      </section>
+
+      <section class="card soon" aria-label="Tutor">
+        <h2>AI tutor <span class="tag">Step 3</span></h2>
+        <p class="note">The tutor will read your scores and give tips and drills for your weakest sounds. Until then, copy this item and paste it into Claude.</p>
+        <div class="row"><button class="btn btn-ghost" id="copy">Copy for Claude</button></div>
+      </section>
+    </div>`;
+
+  // GIF slot: show the animation if the file exists, otherwise the placeholder
+  const img = $("#gif img");
+  img.onload = () => { img.hidden = false; $("#gifEmpty").hidden = true; };
+  img.onerror = () => { img.remove(); };
+
+  const player = $("#player");
+  const problem = micProblem();
+  if (problem){ showWarn(problem); $("#uploadWrap").hidden = false; }
+
+  function paint(){
+    const item = s.items[idx];
+    $("#count").textContent = `Item ${idx+1} of ${s.items.length}`;
+    $("#target").textContent = item;
+    const r = getRating(s.id, idx);
+    $("#rate").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.r === r)));
+    $("#items").innerHTML = s.items.map((t,i)=>`<li><button data-i="${i}" aria-current="${i===idx}"><span>${esc(t)}</span><span class="dot ${getRating(s.id,i)||""}"></span></button></li>`).join("");
+    $("#items").querySelectorAll("[data-i]").forEach(b => b.onclick = () => { idx = +b.dataset.i; resetTake(); paint(); window.scrollTo({top:0,behavior:"smooth"}); });
+  }
+  function resetTake(){ player.removeAttribute("src"); $("#mine").disabled = $("#compare").disabled = true; }
+  function haveTake(url){ player.src = url; $("#mine").disabled = $("#compare").disabled = false; }
+
+  $("#prev").onclick = () => { idx = (idx - 1 + s.items.length) % s.items.length; resetTake(); paint(); };
+  $("#next").onclick = () => { idx = (idx + 1) % s.items.length; resetTake(); paint(); };
+  $("#listen").onclick = () => speak(s.items[idx]);
+  $("#slow").onchange = e => { slow = e.target.checked; };
+  $("#rec").onclick = e => {
+    if (problem){ toast("Recording needs the online version. Use the voice memo option for now."); return; }
+    const btn = e.currentTarget;
+    if (rec.mr && rec.mr.state === "recording") { stopRec(btn); return; }
+    speechSynthesis && speechSynthesis.cancel();
+    startRec(btn, $("#meter"), blob => { haveTake(rec.url); /* Step 2: send blob to Azure here */ });
+  };
+  $("#upload").onchange = e => { const f = e.target.files[0]; if (f){ if (rec.url) URL.revokeObjectURL(rec.url); rec.url = URL.createObjectURL(f); haveTake(rec.url); } };
+  $("#mine").onclick = () => { speechSynthesis && speechSynthesis.cancel(); player.currentTime = 0; player.play(); };
+  $("#compare").onclick = () => speak(s.items[idx], () => setTimeout(() => { player.currentTime = 0; player.play(); }, 350));
+  $("#rate").querySelectorAll("button").forEach(b => b.onclick = () => { setRating(s.id, idx, b.dataset.r); paint(); });
+  $("#app").querySelectorAll("[data-say]").forEach(b => b.onclick = () => speak(b.dataset.say));
+  $("#copy").onclick = async () => {
+    const item = s.items[idx], r = getRating(s.id, idx);
+    const text = `I'm practicing American English pronunciation of the sound /${s.sym}/ (${s.name}).\nTarget: "${item}"\nMy own rating: ${r ? RATES.find(x=>x[0]===r)[1] : "not rated yet"}.\nPlease give me one short tip on mouth and tongue position, then 3 quick drills (minimal pairs or short sentences) for this sound.`;
+    try { await navigator.clipboard.writeText(text); toast("Copied. Paste it into Claude."); }
+    catch(e){ toast("Couldn't copy automatically."); }
+  };
+  paint();
+  window.scrollTo(0,0);
+}
+
+/* ---------- Router ---------- */
+function route(){
+  if (rec.mr && rec.mr.state === "recording") rec.mr.stop();
+  const s = SOUNDS.find(x => x.id === location.hash.slice(1));
+  s ? renderSound(s) : renderHome();
+}
+$("#backBtn").onclick = () => { location.hash = ""; };
+window.addEventListener("hashchange", route);
+route();
+</script>
+</body>
+</html>
