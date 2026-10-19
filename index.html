@@ -55,6 +55,7 @@ h2{font-family:var(--display);font-weight:700;font-size:1.15rem;margin:0 0 8px;t
 .dots{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--line)}
 .dot.good{background:var(--good)} .dot.mid{background:var(--mid)} .dot.weak{background:var(--weak)}
+h2.group{margin:22px 0 10px}
 .legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:.85rem;margin-top:14px}
 .legend span{display:inline-flex;align-items:center;gap:6px}
 
@@ -234,12 +235,117 @@ const SOUNDS = [
   steps:["For u (fool): round your lips tightly, tongue high at the back, hold it a little longer.","For ʊ (full): loosen the lips and tongue, keep it short.","Feel the difference in tension between the two."],
   avoid:"Don't make look and Luke sound the same.",
   pairs:[["full","fool"],["pull","pool"],["look","Luke"],["could","cooed"]],
-  items:["look","good","pool","should","Look, the pool is full.","Would you put the book down?"]}
+  items:["look","good","pool","should","Look, the pool is full.","Would you put the book down?"]},
+
+ /* Consonants */
+ {id:"p-b", group:"cons", sym:"p · b", name:"pat vs bat", ex:"pat, bat, cap",
+  steps:["Close your lips firmly, then open them.","For p, keep your voice off and let a strong puff of air out at the start of words. Hold a paper in front of your mouth: it should move.","For b, turn your voice on and use almost no puff."],
+  avoid:"Don't drop the puff on p at the start of a word, or pat sounds like bat.",
+  pairs:[["pat","bat"],["pin","bin"],["cap","cab"],["pear","bear"]],
+  items:["pen","baby","apple","problem","Put the paper bag by the bed.","Bob bought a purple pen."]},
+ {id:"t-d", group:"cons", sym:"t · d", name:"tie vs die", ex:"top, dog, bed",
+  steps:["Touch the tip of your tongue to the ridge just behind your top teeth (not the teeth themselves).","For t, voice off and release a puff of air: top. For d, voice on with no puff: dog.","At the end of words keep t and d short and light, but don't drop them."],
+  avoid:"Don't put the tongue on the teeth: American t and d touch the ridge behind them.",
+  pairs:[["tie","die"],["town","down"],["bet","bed"],["try","dry"]],
+  items:["time","dog","today","student","Ted told Dad the time.","Don't touch the top desk."]},
+ {id:"k-g", group:"cons", sym:"k · g", name:"coat vs goat", ex:"cat, go, bag",
+  steps:["Raise the back of your tongue to touch the soft back part of the roof of your mouth.","For k, voice off with a puff of air: cat. For g, voice on with no puff: go.","Release cleanly. At the end of words keep it light but audible: back, bag."],
+  avoid:"Don't let k turn into g at the start of words: coat and goat must sound different.",
+  pairs:[["coat","goat"],["cold","gold"],["back","bag"],["came","game"]],
+  items:["cat","good","coffee","again","Can Greg get the car keys?","The big cake looks great."]},
+ {id:"f", group:"cons", sym:"f", name:"f as in fan", ex:"fan, coffee, laugh",
+  steps:["Rest your top teeth lightly on your bottom lip.","Blow air out through the gap. Keep your voice off.","Keep the lip relaxed; don't press hard."],
+  avoid:"Don't use both lips like blowing out a candle, and don't turn it into p: fast is not past.",
+  pairs:[["fan","van"],["fine","pine"],["leaf","leave"],["fast","past"]],
+  items:["fan","coffee","phone","laugh","Five friends found a fish.","Fill the cup with fresh coffee."]},
+ {id:"s-z", group:"cons", sym:"s · z", name:"sue vs zoo", ex:"see, zoo, bus",
+  steps:["Put the tip of your tongue close to the ridge behind your top teeth, without touching it.","Push air through the narrow gap to make a hiss. For s, voice off.","For z, keep the same position and turn your voice on: it buzzes like a bee."],
+  avoid:"Don't let z become s at the end of words: plurals like dogs and days end in z.",
+  pairs:[["sue","zoo"],["bus","buzz"],["price","prize"],["sip","zip"]],
+  items:["see","zoo","dogs","easy","Sue sees six zebras.","These shoes are his size."]},
+ {id:"sh-zh", group:"cons", sym:"ʃ · ʒ", name:"sh as in she, s as in measure", ex:"she, wash, measure",
+  steps:["Pull your tongue a little further back than for s, behind the ridge, and raise the middle of it.","Push your lips forward and round them slightly.","For ʃ voice off: she. For ʒ voice on: measure, usual."],
+  avoid:"Don't let ʃ turn into s: she and see must sound different.",
+  pairs:[["she","see"],["shoe","sue"],["ship","sip"],["mesh","mess"]],
+  items:["she","shop","usually","measure","She sells shells at the shop.","I usually wash it in the morning."]},
+ {id:"ch-j", group:"cons", sym:"tʃ · dʒ", name:"ch as in chair, j as in jump", ex:"chair, jump, bridge",
+  steps:["Start like t: the front of the tongue touches the roof just behind the ridge.","Release it slowly into a sh sound, with lips a little rounded: t + sh = ch.","For dʒ (jump), do the same with your voice on: d + zh."],
+  avoid:"Don't turn ch into sh (chair, not share), and don't turn j into y or zh.",
+  pairs:[["chair","share"],["cheap","jeep"],["rich","ridge"],["chin","gin"]],
+  items:["chair","job","teacher","bridge","Check the cheap chicken.","John enjoyed the orange juice."]},
+ {id:"h", group:"cons", sym:"h", name:"h as in hat", ex:"hat, house, ahead",
+  steps:["Open your mouth for the vowel that comes next.","Let a soft breath out from your throat, like fogging a mirror.","Nothing rubs in the mouth: it's just air."],
+  avoid:"Don't make it harsh like the Spanish j or German ch, and don't drop it: hat is not at.",
+  pairs:[["hat","at"],["heat","eat"],["hold","old"],["hair","air"]],
+  items:["hat","house","behind","perhaps","He has a huge house.","How happy is Harry?"]},
+ {id:"m", group:"cons", sym:"m", name:"m as in man", ex:"man, summer, from",
+  steps:["Close your lips gently.","Turn your voice on and let it hum through your nose.","Hold the hum briefly at the end of words: from, time."],
+  avoid:"Don't drop the m at the end of words or turn it into n: some is not sun.",
+  pairs:[["map","nap"],["some","sun"],["mice","nice"],["came","cane"]],
+  items:["man","summer","name","from","My mom made muffins.","Come home at nine."]},
+ {id:"n", group:"cons", sym:"n", name:"n as in no", ex:"no, any, ten",
+  steps:["Touch the tip of your tongue to the ridge behind your top teeth.","Turn your voice on and let it hum through your nose.","Keep the tongue there until the sound ends; don't add a g."],
+  avoid:"Don't turn n into ŋ at the end of words: sin and sing are different.",
+  pairs:[["sin","sing"],["thin","thing"],["ran","rang"],["night","light"]],
+  items:["no","any","ten","dinner","Nine new nurses.","Ann needs a new phone."]},
+ {id:"y", group:"cons", sym:"j", name:"y as in yes", ex:"yes, you, music",
+  steps:["Raise the middle of your tongue very high toward the roof of your mouth, even higher than for ee.","Turn your voice on and glide quickly into the next vowel.","Keep it short: y-es, not ee-es."],
+  avoid:"Don't make it hard like the j in jet: yes is not jess.",
+  pairs:[["yes","jess"],["yet","jet"],["year","ear"],["yolk","joke"]],
+  items:["yes","you","year","music","Yes, you can use it.","Your new yellow yacht."]},
+ {id:"light-l", group:"cons", sym:"l", name:"light l as in light", ex:"light, love, hello",
+  steps:["Touch the tip of your tongue to the ridge behind your top teeth.","Turn your voice on and let it flow out over the sides of the tongue.","At the start of words keep the back of the tongue low for a clear, light l."],
+  avoid:"Don't turn it into r or n: light is not right or night.",
+  pairs:[["light","right"],["lead","read"],["long","wrong"],["low","no"]],
+  items:["light","love","hello","family","Lily likes lemon lollipops.","Look at the long line."]},
+
+ /* Vowels and glides */
+ {id:"eh", group:"vowel", sym:"ɛ", name:"e as in bed", ex:"bed, said, friend",
+  steps:["Open your jaw about halfway.","Keep the tongue forward and in the middle, lips relaxed.","Keep it short and steady, without sliding into ay."],
+  avoid:"Don't say it like ay (bed is not bayed) or like æ (bed is not bad).",
+  pairs:[["bed","bad"],["pen","pan"],["wet","wait"],["sell","sale"]],
+  items:["bed","said","friend","any","Ten men sent letters.","Get the red pen, Ben."]},
+ {id:"ay", group:"vowel", sym:"eɪ", name:"ay as in day", ex:"day, rain, great",
+  steps:["Start with the tongue forward and mid height, as for e.","Glide up toward ɪ while the jaw closes a little.","It's one sound that moves: d-ay."],
+  avoid:"Don't hold a flat e without the glide: late should not sound like let.",
+  pairs:[["late","let"],["pain","pen"],["sale","sell"],["wait","wet"]],
+  items:["day","rain","great","eight","They stayed eight days.","Wait for the train, Jane."]},
+ {id:"oh", group:"vowel", sym:"oʊ", name:"o as in go", ex:"go, home, know",
+  steps:["Start with the tongue back and mid height, lips rounded.","Glide toward ʊ as the lips round a little more.","It's one sound that moves: g-oh-w."],
+  avoid:"Don't say a short flat o: road is not rod, and coat is not caught.",
+  pairs:[["coat","caught"],["road","rod"],["boat","bought"],["low","law"]],
+  items:["go","home","know","only","Don't go home alone.","I hope the boat is slow."]},
+ {id:"aw", group:"vowel", sym:"ɔ", name:"aw as in thought", ex:"thought, law, talk",
+  steps:["Open your jaw wide, almost as for ɑ.","Round your lips slightly and pull the tongue back.","Many Americans say this the same as ɑ (caught sounds like cot). Both are fine."],
+  avoid:"Don't round the lips into oʊ: law is not low.",
+  pairs:[["law","low"],["caught","coat"],["bought","boat"],["saw","so"]],
+  items:["thought","law","talk","daughter","I saw the dog walk.","We talked all autumn."]},
+ {id:"er", group:"vowel", sym:"ɝ · ɚ", name:"er as in bird", ex:"bird, her, butter",
+  steps:["Make the American r position: tongue pulled back and bunched, or tip curled up, not touching the roof.","Hold it as a vowel with your voice on, lips slightly rounded.","In unstressed endings (butter, doctor) make it short: ɚ."],
+  avoid:"Don't say a vowel without the r (bird is not bud), and don't add a separate vowel before the r.",
+  pairs:[["bird","bud"],["hurt","hut"],["word","wood"],["burn","bun"]],
+  items:["bird","her","work","butter","Her first word was bird.","The doctor turned thirty."]},
+ {id:"eye", group:"vowel", sym:"aɪ", name:"i as in my", ex:"my, time, buy",
+  steps:["Start with the jaw open and the tongue low.","Glide up toward ɪ while closing the jaw.","It's one sound that moves: m-ah-ee."],
+  avoid:"Don't shorten it to a flat a: time is not Tom.",
+  pairs:[["time","Tom"],["like","lock"],["ride","rod"],["wide","wad"]],
+  items:["my","time","buy","light","I like my bike.","Try it five times."]},
+ {id:"ow", group:"vowel", sym:"aʊ", name:"ow as in now", ex:"now, house, out",
+  steps:["Start with the jaw open and the tongue low.","Glide toward ʊ: round your lips and close the jaw a little.","It's one sound that moves: n-ah-oo."],
+  avoid:"Don't make it oʊ: now is not no.",
+  pairs:[["now","no"],["town","tone"],["loud","load"],["found","fond"]],
+  items:["now","house","out","flower","How about now?","The brown cow is loud."]},
+ {id:"oy", group:"vowel", sym:"ɔɪ", name:"oy as in boy", ex:"boy, choice, noise",
+  steps:["Start with lips rounded and the tongue back, as for ɔ.","Glide forward and up toward ɪ, unrounding the lips.","It's one sound that moves: b-aw-ee."],
+  avoid:"Don't split it into two syllables: boy is one beat.",
+  pairs:[["boy","buy"],["toil","tile"],["coin","cone"],["oil","all"]],
+  items:["boy","choice","noise","enjoy","The boy enjoyed the toy.","Avoid the noise."]}
 ];
+const GROUPS = [["hard","Hardest for most learners"],["cons","Consonants"],["vowel","Vowels and glides"]];
 
 /* ---------- Mouth diagrams: animated side view (facing left) of lips, teeth, tongue and soft palate ----------
    Each pose lists only what differs from rest: jaw opening 0-1, tongue points (index: [x,y] with the jaw closed),
-   lip rounding, lower lip tucked under the teeth (v), extra lip parting, soft palate lowered, voice/air/nasal air on. */
+   lip rounding, lips closed (p, b, m), lower lip tucked under the teeth (v, f), extra lip parting, soft palate lowered, voice/air/nasal air on. */
 const TONGUE_REST = [[59,111],[68,104],[84,97],[104,93],[124,95],[140,104],[147,122],[148,146],[142,157],[110,150],[80,134],[63,121]];
 const JAW_PULL = [1,1,.9,.75,.55,.35,.15,0,0,.6,.9,1];   // how much each tongue point rides along when the jaw opens
 const JAW_PIVOT = [150,90], JAW_MAX_DEG = 7;
@@ -260,20 +366,56 @@ const POSES = {
   ng:    {jaw:.15, velum:1, nasal:1, voice:1, t:{4:[130,88],5:[143,94]}},
   darkl: {jaw:.2, voice:1, t:{0:[62,88],11:[60,100],1:[70,96],2:[86,102],3:[104,100],4:[124,90],5:[140,98],6:[150,120]}},
   oo:    {jaw:.1, round:1, voice:1, t:{2:[84,98],3:[104,90],4:[124,85],5:[140,96],6:[146,120]}},
-  uu:    {jaw:.25, round:.5, voice:1, t:{3:[104,93],4:[122,90],5:[139,100]}}
+  uu:    {jaw:.25, round:.5, voice:1, t:{3:[104,93],4:[122,90],5:[139,100]}},
+  // stops: closure, then release with a puff of air
+  p:     {jaw:.1, close:1},                 pr: {jaw:.3, air:1},
+  b:     {jaw:.1, close:1, voice:1},        br: {jaw:.3, air:.3, voice:1},
+  t:     {jaw:.2, t:{0:[62,88],1:[70,95],2:[84,97],11:[62,104]}},  tr: {jaw:.3, air:1},
+  d:     {jaw:.2, voice:1, t:{0:[62,88],1:[70,95],2:[84,97],11:[62,104]}},  dr: {jaw:.3, air:.3, voice:1},
+  k:     {jaw:.2, t:{3:[110,90],4:[130,84],5:[144,90]}},  kr: {jaw:.3, air:1},
+  g:     {jaw:.2, voice:1, t:{3:[110,90],4:[130,84],5:[144,90]}},  gr: {jaw:.3, air:.3, voice:1},
+  f:     {jaw:.2, vlip:1, air:1},
+  s:     {jaw:.15, air:1, t:{0:[62,92],1:[70,96],2:[84,97],11:[61,105]}},
+  z:     {jaw:.15, air:.6, voice:1, t:{0:[62,92],1:[70,96],2:[84,97],11:[61,105]}},
+  sh:    {jaw:.15, round:.5, air:1, t:{0:[64,97],1:[73,90],2:[88,91],3:[106,93],11:[62,108]}},
+  zh:    {jaw:.15, round:.5, air:.6, voice:1, t:{0:[64,97],1:[73,90],2:[88,91],3:[106,93],11:[62,108]}},
+  tch:   {jaw:.15, round:.4, t:{0:[64,90],1:[72,85],2:[86,90],11:[61,104]}},
+  dj:    {jaw:.15, round:.4, voice:1, t:{0:[64,90],1:[72,85],2:[86,90],11:[61,104]}},
+  h:     {jaw:.4, air:1},
+  m:     {jaw:.1, close:1, velum:1, nasal:1, voice:1},
+  n:     {jaw:.2, velum:1, nasal:1, voice:1, t:{0:[62,88],1:[70,95],2:[84,97],11:[62,104]}},
+  y:     {jaw:.05, voice:1, t:{1:[66,98],2:[78,88],3:[96,83],4:[118,87],5:[138,99]}},
+  lightl:{jaw:.2, voice:1, t:{0:[62,88],11:[60,100],1:[70,94],2:[84,96],3:[104,94],4:[124,96]}},
+  // vowels and glide start points
+  eh:    {jaw:.55, voice:1, t:{1:[68,104],2:[82,98],3:[100,96],4:[120,98],5:[138,106]}},
+  e:     {jaw:.35, voice:1, t:{1:[67,102],2:[81,94],3:[100,91],4:[120,94],5:[138,103]}},
+  o:     {jaw:.4, round:.8, voice:1, t:{2:[84,100],3:[106,94],4:[124,90],5:[140,100],6:[148,122]}},
+  aw:    {jaw:.8, round:.5, voice:1, t:{3:[106,104],4:[126,98],5:[142,104],6:[152,122]}},
+  a:     {jaw:1, voice:1, t:{0:[60,113],1:[69,109],2:[86,106],3:[106,105],4:[126,104],5:[141,108]}}
 };
+// a pair of stops (closure, release) shown one after the other, each with its caption
+const stopPair = (a, ar, b, br, capA, capB) => ({ seq:[[a, capA, [a, ar]], [b, capB, [b, br]]], dur:4,
+  keys:[[0,"rest"],[.08,a],[.2,a],[.24,ar],[.34,ar],[.44,"rest"],[.52,b],[.64,b],[.68,br],[.78,br],[.9,"rest"],[1,"rest"]] });
+// a glide from one position to another (diphthongs, y)
+const glide = (a, b) => ({ seq:[[a]], keys:[[0,"rest"],[.2,a],[.32,a],[.56,b],[.72,b],[.9,"rest"],[1,"rest"]] });
 // seq: one or two target poses with an optional caption; keys: explicit [time, pose] timeline (flap t)
 const MOUTH = {
   "th-voiceless": {seq:[["th"]]}, "th-voiced": {seq:[["dh"]]}, "r": {seq:[["r"]]}, "ae": {seq:[["ae"]]},
   "ih-ee": {seq:[["ee","sheep /i/"],["ih","ship /ɪ/"]]}, "uh": {seq:[["uh"]]}, "ah": {seq:[["ah"]]}, "schwa": {seq:[["schwa"]]},
   "flap-t": {seq:[["flap"]], dur:3, keys:[[0,"rest"],[.25,"schwa"],[.4,"schwa"],[.46,"flap"],[.52,"schwa"],[.75,"schwa"],[.92,"rest"],[1,"rest"]]},
   "v-w": {seq:[["v","v · vest"],["w","w · west"]]}, "ng": {seq:[["ng"]]}, "dark-l": {seq:[["darkl"]]},
-  "oo": {seq:[["oo","fool /u/"],["uu","full /ʊ/"]]}
+  "oo": {seq:[["oo","fool /u/"],["uu","full /ʊ/"]]},
+  "p-b": stopPair("p","pr","b","br","p · pat","b · bat"), "t-d": stopPair("t","tr","d","dr","t · tie","d · die"),
+  "k-g": stopPair("k","kr","g","gr","k · coat","g · goat"), "ch-j": stopPair("tch","sh","dj","zh","tʃ · chin","dʒ · gin"),
+  "f": {seq:[["f"]]}, "s-z": {seq:[["s","s · sue"],["z","z · zoo"]]}, "sh-zh": {seq:[["sh","ʃ · she"],["zh","ʒ · measure"]]},
+  "h": {seq:[["h"]]}, "m": {seq:[["m"]]}, "n": {seq:[["n"]]}, "y": glide("y","schwa"), "light-l": {seq:[["lightl"]]},
+  "eh": {seq:[["eh"]]}, "ay": glide("e","ih"), "oh": glide("o","uu"), "aw": {seq:[["aw"]]}, "er": {seq:[["r"]]},
+  "eye": glide("a","ih"), "ow": glide("a","uu"), "oy": glide("aw","ih")
 };
 
 function mouthSVG(id, still){
   const m = MOUTH[id]; if (!m) return "";
-  const full = k => ({jaw:.15, round:0, vlip:0, part:0, velum:0, voice:0, air:0, nasal:0, t:{}, ...POSES[k]});
+  const full = k => ({jaw:.15, round:0, close:0, vlip:0, part:0, velum:0, voice:0, air:0, nasal:0, t:{}, ...POSES[k]});
   const rot = (p, deg) => { const a = deg * Math.PI / 180, dx = p[0] - JAW_PIVOT[0], dy = p[1] - JAW_PIVOT[1];
     return [JAW_PIVOT[0] + dx*Math.cos(a) - dy*Math.sin(a), JAW_PIVOT[1] + dx*Math.sin(a) + dy*Math.cos(a)]; };
   const f = n => Math.round(n * 10) / 10;
@@ -293,8 +435,8 @@ function mouthSVG(id, still){
   const attrs = p => ({
     tongue: tongue(p), velum: VELUM[p.velum],
     jaw: `${f(-JAW_MAX_DEG * p.jaw)} ${JAW_PIVOT.join(" ")}`,
-    upper: `${f(-5 * p.round)} ${f(p.round)}`,
-    lower: `${f(-5 * p.round + 6 * p.vlip)} ${f(-p.round - 7 * p.vlip + p.part)}`,
+    upper: `${f(-5 * p.round)} ${f(p.round + p.close)}`,
+    lower: `${f(-5 * p.round + 6 * p.vlip)} ${f(-p.round - 7 * p.vlip + p.part - 5 * p.close)}`,
     voice: p.voice, air: p.air, nasal: p.nasal
   });
 
@@ -308,8 +450,8 @@ function mouthSVG(id, still){
   const kt = keys.map(k => k[0]).join(";"), ks = keys.slice(1).map(() => ".45 0 .55 1").join(";");
   const anim = (name, field, extra = "") => still ? "" :
     `<animate${extra ? "Transform" : ""} attributeName="${name}" ${extra} dur="${dur}" repeatCount="indefinite" calcMode="spline" keyTimes="${kt}" keySplines="${ks}" values="${frames.map(fr => fr[field]).join(";")}"/>`;
-  const caps = m.seq.length > 1 ? m.seq.map(([k, text], i) => {
-    const vals = keys.map(([, kk]) => kk === k ? 1 : 0);
+  const caps = m.seq.length > 1 ? m.seq.map(([k, text, shownFor], i) => {
+    const vals = keys.map(([, kk]) => (shownFor || [k]).includes(kk) ? 1 : 0);
     return `<text x="8" y="192" class="m-cap" opacity="${still ? (i ? 0 : 1) : 0}">${esc(text)}${still ? "" :
       `<animate attributeName="opacity" dur="${dur}" repeatCount="indefinite" calcMode="spline" keyTimes="${kt}" keySplines="${ks}" values="${vals.join(";")}"/>`}</text>`;
   }).join("") : "";
@@ -353,7 +495,13 @@ const REAL = {
   "uh": [["ʌ", SS(4,652)]], "ah": [["ɑ", SS(4,593)]], "schwa": [["ə", SS(4,601)]], "flap-t": [["ɾ", SS(1,638)]],
   "v-w": [["v", SS(1,118)], ["w", SS(3,119)]], "ng": [["ŋ", SS(1,331)]],
   "dark-l": [["dark l in English", "https://www.seeingspeech.ac.uk/r-and-l-in-english/#item=rl-13"]],
-  "oo": [["u (fool)", SS(4,117)], ["ʊ (full)", SS(4,650)]]
+  "oo": [["u (fool)", SS(4,117)], ["ʊ (full)", SS(4,650)]],
+  "p-b": [["p", SS(1,112)], ["b", SS(1,98)]], "t-d": [["t", SS(1,116)], ["d", SS(1,100)]], "k-g": [["k", SS(1,107)], ["g", SS(1,609)]],
+  "f": [["f", SS(1,102)]], "s-z": [["s", SS(1,115)], ["z", SS(1,122)]], "sh-zh": [["ʃ", SS(1,643)], ["ʒ", SS(1,658)]],
+  "h": [["h", SS(1,104)]], "m": [["m", SS(1,109)]], "n": [["n", SS(1,110)]], "y": [["j", SS(1,106)]], "light-l": [["l", SS(1,108)]],
+  "eh": [["ɛ", SS(4,603)]], "aw": [["ɔ", SS(4,596)]],
+  "ay": [["e, where the glide starts", SS(4,101)]], "oh": [["o, where the glide starts", SS(4,111)]],
+  "eye": [["a, where the glide starts", SS(4,97)]], "ow": [["a, where the glide starts", SS(4,97)]], "oy": [["ɔ, where the glide starts", SS(4,596)]]
 };
 
 /* ---------- Storage (ratings per item) ---------- */
@@ -509,7 +657,9 @@ async function assessPronunciation(referenceText, blob){
 // Azure gives en-US phonemes in its own spelling (th, dh, ae…); show them as IPA like the rest of the app
 const IPA = {aa:"ɑ",ae:"æ",ah:"ʌ",ao:"ɔ",aw:"aʊ",ax:"ə",ay:"aɪ",b:"b",ch:"tʃ",d:"d",dh:"ð",eh:"ɛ",er:"ɝ",ey:"eɪ",f:"f",g:"g",h:"h",hh:"h",ih:"ɪ",iy:"i",jh:"dʒ",k:"k",l:"l",m:"m",n:"n",ng:"ŋ",ow:"oʊ",oy:"ɔɪ",p:"p",r:"ɹ",s:"s",sh:"ʃ",t:"t",th:"θ",uh:"ʊ",uw:"u",v:"v",w:"w",y:"j",z:"z",zh:"ʒ"};
 // Which scored phonemes belong to each sound page (Azure has no separate flap, so flap t is scored as t)
-const TARGET = {"th-voiceless":["θ"],"th-voiced":["ð"],"r":["ɹ","ɝ"],"ae":["æ"],"ih-ee":["ɪ","i"],"uh":["ʌ"],"ah":["ɑ"],"schwa":["ə"],"flap-t":["t","ɾ"],"v-w":["v","w"],"ng":["ŋ"],"dark-l":["l","ɫ"],"oo":["ʊ","u"]};
+const TARGET = {"p-b":["p","b"],"t-d":["t","d"],"k-g":["k","g"],"f":["f"],"s-z":["s","z"],"sh-zh":["ʃ","ʒ"],"ch-j":["tʃ","dʒ"],"h":["h"],"m":["m"],"n":["n"],"y":["j"],"light-l":["l"],
+  "eh":["ɛ"],"ay":["eɪ"],"oh":["oʊ"],"aw":["ɔ"],"er":["ɝ","ɚ"],"eye":["aɪ"],"ow":["aʊ"],"oy":["ɔɪ"],
+  "th-voiceless":["θ"],"th-voiced":["ð"],"r":["ɹ","ɝ"],"ae":["æ"],"ih-ee":["ɪ","i"],"uh":["ʌ"],"ah":["ɑ"],"schwa":["ə"],"flap-t":["t","ɾ"],"v-w":["v","w"],"ng":["ŋ"],"dark-l":["l","ɫ"],"oo":["ʊ","u"]};
 
 function parseAssessment(j){
   const best = j.NBest && j.NBest[0];
@@ -581,14 +731,16 @@ function renderHome(){
   $("#backBtn").hidden = true;
   $("#app").innerHTML = `
     <p class="intro">Pick a sound. Listen to the model, record yourself, and compare. Each dot is one practice item, colored by how you rated it.</p>
-    <div class="grid">${SOUNDS.map(s => `
+    ${GROUPS.map(([g, title]) => `
+    <h2 class="group">${title}</h2>
+    <div class="grid">${SOUNDS.filter(s => (s.group || "hard") === g).map(s => `
       <button class="tile" data-go="${s.id}">
         <span class="sym">${s.sym}</span>
         <span class="name">${esc(s.name)}</span>
         <span class="ex">${esc(s.ex)}</span>
         <span class="dots" aria-hidden="true">${s.items.map((_,i)=>`<span class="dot ${getRating(s.id,i)||""}"></span>`).join("")}</span>
       </button>`).join("")}
-    </div>
+    </div>`).join("")}
     <div class="legend"><span><i class="dot weak"></i>Needs work</span><span><i class="dot mid"></i>Getting there</span><span><i class="dot good"></i>Got it</span><span><i class="dot"></i>Not tried</span></div>`;
   $("#app").querySelectorAll("[data-go]").forEach(b => b.onclick = () => { location.hash = b.dataset.go; });
   window.scrollTo(0,0);
@@ -642,7 +794,7 @@ function renderSound(s){
             <p class="avoid"><b>Avoid:</b> ${esc(s.avoid)}</p>
             ${REAL[s.id] ? `<p class="label" style="margin:14px 0 0">Watch a real speaker (MRI scan)</p>
             <ul class="real">${REAL[s.id].map(([label, url]) => `<li><a href="${url}" target="_blank" rel="noopener">▶ ${esc(label)} ↗</a></li>`).join("")}</ul>
-            <p class="note">Videos by Seeing Speech, University of Glasgow (CC BY-NC-ND 4.0). They open on their site.${/^(ae|ih-ee|uh|ah|schwa|oo)$/.test(s.id) ? " Vowels there are reference vowels, close to but not exactly American English." : ""}</p>` : ""}
+            <p class="note">Videos by Seeing Speech, University of Glasgow (CC BY-NC-ND 4.0). They open on their site.${/^(ae|ih-ee|uh|ah|schwa|oo|eh|ay|oh|aw|eye|ow|oy)$/.test(s.id) ? " Vowels there are reference vowels, close to but not exactly American English." : ""}</p>` : ""}
           </div>
         </div>
       </section>
@@ -876,7 +1028,7 @@ function renderSettings(){
 /* ---------- Updates ----------
    Phones keep a saved copy of the page for a while, so the app asks GitHub for the newest copy and offers a reload.
    Bump APP_VERSION with every change that is pushed. */
-const APP_VERSION = "2026-10-19.5";
+const APP_VERSION = "2026-10-19.6";
 async function latestVersion(){
   const r = await fetch(location.pathname + "?check=" + Date.now(), { cache:"no-store" });
   const m = (await r.text()).match(/const APP_VERSION = "([^"]+)"/);

@@ -3,7 +3,10 @@
 A personal web app for practicing American English pronunciation on iPhone (Safari).
 
 ## What works now (step 1)
-- 13 sounds that learners often find hard (θ, ð, American r, æ, ship/sheep, ʌ, ɑ, schwa, flap t, v/w, ŋ, dark l, full/fool).
+- All the sounds of American English on 33 pages, in three groups on the home screen:
+  - Hardest for most learners: θ, ð, American r, æ, ship/sheep, ʌ, ɑ, schwa, flap t, v/w, ŋ, dark l, full/fool.
+  - Consonants: p/b, t/d, k/g, f, s/z, ʃ/ʒ, tʃ/dʒ, h, m, n, y (j), light l.
+  - Vowels and glides: ɛ, eɪ, oʊ, ɔ, ɝ/ɚ, aɪ, aʊ, ɔɪ.
 - Each sound has: practice items (words and sentences), a model voice (the phone's built-in US voice, with a slow option), recording and playback, "model, then me" comparison, self-rating, mouth/tongue steps, and tap-to-hear minimal pairs.
 - Ratings are saved on the device (localStorage).
 - Recording needs the app to be opened from an https address (for example GitHub Pages). Opened as a local file, it offers a voice-memo upload instead.
@@ -30,7 +33,7 @@ Each sound page has an animated side view of the mouth (lips, teeth, tongue, roo
 
 Below the steps, "Watch a real speaker" links open the matching MRI video on Seeing Speech (University of Glasgow, CC BY-NC-ND 4.0). The videos are linked, not copied into this repo.
 
-To replace a drawing with your own animation, put a GIF at `gifs/<sound-id>.gif` (ids: th-voiceless, th-voiced, r, ae, ih-ee, uh, ah, schwa, flap-t, v-w, ng, dark-l, oo). If the file exists, the app shows it instead.
+To replace a drawing with your own animation, put a GIF at `gifs/<sound-id>.gif` (the sound's `id` in `SOUNDS`, for example th-voiceless, r, p-b or oy). If the file exists, the app shows it instead.
 
 ## Pronunciation scores (step 2)
 - After each recording, the take is sent to Azure AI Speech Pronunciation Assessment (en-US) and the "Pronunciation score" card shows overall, accuracy, fluency and completeness, plus a score for every word and every sound. Weak sounds are red, and the sound of the current page is outlined.
