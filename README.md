@@ -19,6 +19,9 @@ A personal web app for practicing American English pronunciation on iPhone (Safa
 - Model is chosen in Settings: Claude Haiku 5.5 (default, cheapest), GPT-4.1 mini, Claude Sonnet 5.5, or any other OpenRouter model ID.
 - Setup: create a key at openrouter.ai/settings/keys with a small credit limit, then paste it in ⚙ Settings → AI tutor and tap Check key.
 
+## Updates
+Phones keep a saved copy of the page for a while. The app compares its `APP_VERSION` with the copy on GitHub when it opens or comes back to the foreground, and shows an "Update" button when a newer one is online. Settings also has "Check for updates". **Bump `APP_VERSION` in `index.html` with every change you push**, or the update button won't appear.
+
 ## API keys
 There is no server. Keys are typed into the app's Settings screen and stored only in that device's localStorage. Never put keys in `index.html` or anywhere in this repo: the repo is public.
 

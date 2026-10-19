@@ -150,6 +150,8 @@ svg.mouth{width:100%;height:100%;display:block}
 .field input,.field select{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0;width:100%}
 .keyrow{display:flex;gap:8px}
 .keyrow input{flex:1}
+.update{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 8px 8px 16px;border-radius:999px;font-size:.92rem;z-index:21;display:flex;align-items:center;gap:12px;white-space:nowrap}
+.update button{border:0;border-radius:999px;background:var(--listen);color:#fff;font-weight:700;padding:8px 14px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:.9rem;z-index:20}
 </style>
 </head>
@@ -163,6 +165,7 @@ svg.mouth{width:100%;height:100%;display:block}
   <main id="app"></main>
 </div>
 <div class="toast" id="toast" role="status" hidden></div>
+<div class="update" id="update" role="status" hidden>A new version is ready <button id="updateBtn">Update</button></div>
 
 <script>
 /* ---------- Content: the sounds ---------- */
@@ -812,7 +815,19 @@ function renderSettings(){
         <p class="note">Saved only on this device, like the Azure key.</p>
         <div class="row"><button class="btn btn-ghost" id="clearOr">Remove key from this device</button></div>
       </section>
+      <section class="card">
+        <h2>App version</h2>
+        <p class="note" style="margin:0">You have version ${APP_VERSION}.</p>
+        <div class="row"><button class="btn btn-ghost" id="checkUpd">Check for updates</button></div>
+      </section>
     </div>`;
+  $("#checkUpd").onclick = async () => {
+    toast("Checking…");
+    const v = await checkForUpdate();
+    if (v === null) toast("Couldn't check. Are you online?");
+    else if (v === APP_VERSION) toast("You have the newest version.");
+    else loadNewest();
+  };
   // OpenRouter section
   const orKey = $("#orKey"), orModel = $("#orModel"), orCustom = $("#orCustom");
   const known = MODELS.some(m => m[0] === cfg.orModel);
@@ -856,6 +871,26 @@ function renderSettings(){
     } catch(e){ showWarn("Couldn't reach Azure. Check the region spelling (for example westeurope) and your internet connection."); }
   };
   window.scrollTo(0,0);
+}
+
+/* ---------- Updates ----------
+   Phones keep a saved copy of the page for a while, so the app asks GitHub for the newest copy and offers a reload.
+   Bump APP_VERSION with every change that is pushed. */
+const APP_VERSION = "2026-10-19.5";
+async function latestVersion(){
+  const r = await fetch(location.pathname + "?check=" + Date.now(), { cache:"no-store" });
+  const m = (await r.text()).match(/const APP_VERSION = "([^"]+)"/);
+  return m ? m[1] : null;
+}
+function loadNewest(){ location.replace(location.pathname + "?v=" + Date.now() + location.hash); }
+async function checkForUpdate(){
+  try { const v = await latestVersion(); if (v && v !== APP_VERSION) $("#update").hidden = false; return v; } catch(e) { return null; }
+}
+$("#updateBtn").onclick = loadNewest;
+if (/[?&]v=/.test(location.search)) history.replaceState(null, "", location.pathname + location.hash);   // tidy the address after an update
+if (location.protocol !== "file:"){
+  checkForUpdate();
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) checkForUpdate(); });
 }
 
 /* ---------- Router ---------- */
