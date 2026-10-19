@@ -151,6 +151,7 @@ svg.mouth{width:100%;height:100%;display:block}
 .field input,.field select{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0;width:100%}
 .keyrow{display:flex;gap:8px}
 .keyrow input{flex:1}
+.field textarea{font:.8rem/1.4 ui-monospace,Menlo,monospace;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;resize:vertical;word-break:break-all}
 .update{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 8px 8px 16px;border-radius:999px;font-size:.92rem;z-index:21;display:flex;align-items:center;gap:12px;white-space:nowrap}
 .update button{border:0;border-radius:999px;background:var(--listen);color:#fff;font-weight:700;padding:8px 14px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:.9rem;z-index:20}
@@ -595,6 +596,21 @@ const CFG_KEY = "accentlab.settings";
 let cfg = { azureKey:"", azureRegion:"westeurope", orKey:"", orModel:"anthropic/claude-haiku-5.5" };
 try { Object.assign(cfg, JSON.parse(localStorage.getItem(CFG_KEY) || "{}")); } catch(e) {}
 function saveCfg(){ try { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); } catch(e) {} }
+// iPhone may erase a site's saved data (unused for 7 days in Safari, or when storage runs low). Ask it to keep ours.
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+
+// Backup code: keys, settings and ratings in one line the user can keep in Notes and paste back
+const BACKUP_PREFIX = "ACCENTLAB1:";
+function makeBackup(){ return BACKUP_PREFIX + btoa(unescape(encodeURIComponent(JSON.stringify({ cfg, ratings: store })))); }
+function readBackup(code){
+  const s = String(code).replace(/\s+/g, "");
+  if (!s.startsWith(BACKUP_PREFIX)) throw new Error("That doesn't look like an Accent Lab backup code. It should start with ACCENTLAB1:");
+  let data;
+  try { data = JSON.parse(decodeURIComponent(escape(atob(s.slice(BACKUP_PREFIX.length))))); }
+  catch(e) { throw new Error("The code seems cut off or changed. Copy the whole line from your note and try again."); }
+  if (!data || typeof data.cfg !== "object") throw new Error("The code has no settings in it.");
+  return data;
+}
 const azureReady = () => !!(cfg.azureKey && cfg.azureRegion);
 const tutorReady = () => !!(cfg.orKey && cfg.orModel);
 // Tutor models on OpenRouter (cost per tip is a rough estimate at ~800 tokens in, ~300 out)
@@ -968,11 +984,44 @@ function renderSettings(){
         <div class="row"><button class="btn btn-ghost" id="clearOr">Remove key from this device</button></div>
       </section>
       <section class="card">
+        <h2>Backup</h2>
+        <p class="note" style="margin:0">iPhone sometimes erases what the app saved. Copy a backup code (your keys, region, model and ratings) into a note, and paste it back here if your keys disappear.</p>
+        <div class="row"><button class="btn btn-listen" id="backupBtn">Copy backup code</button></div>
+        <label class="field" id="backupWrap" hidden><span class="label">Your backup code</span>
+          <textarea id="backupOut" readonly rows="3"></textarea></label>
+        <p class="note">The code contains your keys, so keep the note private.</p>
+        <label class="field"><span class="label">Restore from a backup code</span>
+          <textarea id="restoreIn" rows="3" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Paste the code that starts with ACCENTLAB1:"></textarea></label>
+        <div class="warn" id="restoreWarn" hidden></div>
+        <div class="row"><button class="btn btn-ghost" id="restoreBtn">Restore</button></div>
+        <p class="note" id="persistNote"></p>
+      </section>
+      <section class="card">
         <h2>App version</h2>
         <p class="note" style="margin:0">You have version ${APP_VERSION}.</p>
         <div class="row"><button class="btn btn-ghost" id="checkUpd">Check for updates</button></div>
       </section>
     </div>`;
+  // Backup section
+  $("#backupBtn").onclick = async () => {
+    const code = makeBackup(), out = $("#backupOut");
+    out.value = code; $("#backupWrap").hidden = false;
+    try { await navigator.clipboard.writeText(code); toast("Copied. Paste it into a note."); }
+    catch(e) { out.focus(); out.select(); toast("Select the code below and copy it."); }
+  };
+  $("#restoreBtn").onclick = () => {
+    const w = $("#restoreWarn"); w.hidden = true;
+    try {
+      const data = readBackup($("#restoreIn").value);
+      Object.assign(cfg, data.cfg); saveCfg();
+      if (data.ratings && typeof data.ratings === "object"){ store = data.ratings; save(); }
+      renderSettings(); toast("Restored. Your keys are back.");
+    } catch(e){ w.textContent = e.message; w.hidden = false; }
+  };
+  if (navigator.storage && navigator.storage.persisted) navigator.storage.persisted().then(kept => {
+    $("#persistNote").textContent = kept ? "This iPhone has agreed to keep the app's data. A backup is still a good idea."
+                                         : "This iPhone may still erase the app's data, so keep a backup code.";
+  }).catch(() => {});
   $("#checkUpd").onclick = async () => {
     toast("Checking…");
     const v = await checkForUpdate();
@@ -1028,7 +1077,7 @@ function renderSettings(){
 /* ---------- Updates ----------
    Phones keep a saved copy of the page for a while, so the app asks GitHub for the newest copy and offers a reload.
    Bump APP_VERSION with every change that is pushed. */
-const APP_VERSION = "2026-10-19.6";
+const APP_VERSION = "2026-10-19.7";
 async function latestVersion(){
   const r = await fetch(location.pathname + "?check=" + Date.now(), { cache:"no-store" });
   const m = (await r.text()).match(/const APP_VERSION = "([^"]+)"/);

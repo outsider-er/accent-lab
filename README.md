@@ -26,7 +26,7 @@ A personal web app for practicing American English pronunciation on iPhone (Safa
 Phones keep a saved copy of the page for a while. The app compares its `APP_VERSION` with the copy on GitHub when it opens or comes back to the foreground, and shows an "Update" button when a newer one is online. Settings also has "Check for updates". **Bump `APP_VERSION` in `index.html` with every change you push**, or the update button won't appear.
 
 ## API keys
-There is no server. Keys are typed into the app's Settings screen and stored only in that device's localStorage. Never put keys in `index.html` or anywhere in this repo: the repo is public.
+There is no server. Keys are typed into the app's Settings screen and stored only in that device's localStorage. iPhone can erase that storage (Safari clears sites unused for 7 days; the Home Screen app and Safari have separate storage), so the app asks for persistent storage and Settings has **Backup**: "Copy backup code" gives one line (`ACCENTLAB1:` + base64 JSON of the settings and ratings) to keep in a private note, and "Restore" puts it back. Never put keys in `index.html` or anywhere in this repo: the repo is public.
 
 ## Tongue animations
 Each sound page has an animated side view of the mouth (lips, teeth, tongue, roof of the mouth, soft palate), drawn as SVG in `index.html` (`POSES` and `MOUTH`). It moves from rest into the sound's position and back; tap it to pause. A blue arrow shows air, a red zigzag shows voice. With "Reduce motion" turned on, it shows the target position without moving.
@@ -47,7 +47,7 @@ To replace a drawing with your own animation, put a GIF at `gifs/<sound-id>.gif`
 - Setup: create a key at openrouter.ai/settings/keys with a small credit limit, then paste it in ⚙ Settings → AI tutor and tap Check key.
 
 ## API keys
-There is no server. Keys are typed into the app's Settings screen and stored only in that device's localStorage. Never put keys in `index.html` or anywhere in this repo: the repo is public.
+There is no server. Keys are typed into the app's Settings screen and stored only in that device's localStorage. iPhone can erase that storage (Safari clears sites unused for 7 days; the Home Screen app and Safari have separate storage), so the app asks for persistent storage and Settings has **Backup**: "Copy backup code" gives one line (`ACCENTLAB1:` + base64 JSON of the settings and ratings) to keep in a private note, and "Restore" puts it back. Never put keys in `index.html` or anywhere in this repo: the repo is public.
 
 ## Tongue animations
 Put one GIF per sound in the `gifs/` folder, named after the sound id. The app shows it automatically; if the file is missing, it shows a placeholder.
