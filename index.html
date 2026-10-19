@@ -20,12 +20,14 @@
   --body:"Atkinson Hyperlegible", -apple-system, system-ui, sans-serif;
   --ipa:"Noto Sans", "Lucida Grande", "Segoe UI", sans-serif;
   --r:14px;
+  --m-line:#6B7688; --m-skin:#F3DDD0; --m-tongue:#E58A8F; --m-tongue-line:#B85C62; --m-tooth:#FFFFFF;
   color-scheme:light;
 }
 @media (prefers-color-scheme: dark){
   :root{ --bg:#0F141C; --surface:#18202B; --ink:#E9EDF3; --muted:#9AA6B8; --line:#2A3442;
     --listen:#8D9CFF; --listen-soft:#232B4A; --rec:#FF6B6F; --rec-soft:#3A1F23;
-    --good:#4CC88A; --mid:#E3A94A; --weak:#F07775; color-scheme:dark; }
+    --good:#4CC88A; --mid:#E3A94A; --weak:#F07775; color-scheme:dark;
+    --m-line:#9AA6B8; --m-skin:#4A3A35; --m-tongue:#C25E66; --m-tongue-line:#E58A8F; --m-tooth:#E9EDF3; }
 }
 *{box-sizing:border-box}
 html,body{margin:0}
@@ -93,6 +95,20 @@ canvas.meter{width:100%;height:36px;display:block;margin-top:10px;border-radius:
 .gif{aspect-ratio:1;max-width:100%;border-radius:12px;background:repeating-linear-gradient(45deg,var(--bg) 0 10px,var(--surface) 10px 20px);border:1px dashed var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:12px;color:var(--muted);font-size:.82rem;overflow:hidden}
 .gif img{width:100%;height:100%;object-fit:contain;border-radius:10px}
 .gif code{font-size:.78rem;word-break:break-all}
+.gif.mouthbox{background:var(--bg);border:1px solid var(--line);padding:0;cursor:pointer}
+#gifEmpty{width:100%;height:100%}
+svg.mouth{width:100%;height:100%;display:block}
+.m-line{fill:none;stroke:var(--m-line);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.m-skin{fill:var(--m-skin);stroke:var(--m-line);stroke-width:1.2;stroke-linejoin:round}
+.m-tongue{fill:var(--m-tongue);stroke:var(--m-tongue-line);stroke-width:1.2}
+.m-tooth{fill:var(--m-tooth);stroke:var(--m-line);stroke-width:1}
+.m-air{fill:none;stroke:var(--listen);stroke-width:2;stroke-dasharray:4 3}
+.m-air-fill{fill:var(--listen)}
+.m-voice{fill:none;stroke:var(--rec);stroke-width:1.6;stroke-linejoin:round}
+.m-label{font:600 7px var(--body);fill:var(--muted)}
+.m-cap{font:700 11px var(--body);fill:var(--ink)}
+.real{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:4px}
+.real a{color:var(--listen);font-weight:700}
 .steps{margin:0;padding-left:1.2em}
 .steps li{margin-bottom:6px}
 .avoid{margin-top:8px;font-size:.92rem}
@@ -217,6 +233,125 @@ const SOUNDS = [
   pairs:[["full","fool"],["pull","pool"],["look","Luke"],["could","cooed"]],
   items:["look","good","pool","should","Look, the pool is full.","Would you put the book down?"]}
 ];
+
+/* ---------- Mouth diagrams: animated side view (facing left) of lips, teeth, tongue and soft palate ----------
+   Each pose lists only what differs from rest: jaw opening 0-1, tongue points (index: [x,y] with the jaw closed),
+   lip rounding, lower lip tucked under the teeth (v), extra lip parting, soft palate lowered, voice/air/nasal air on. */
+const TONGUE_REST = [[59,111],[68,104],[84,97],[104,93],[124,95],[140,104],[147,122],[148,146],[142,157],[110,150],[80,134],[63,121]];
+const JAW_PULL = [1,1,.9,.75,.55,.35,.15,0,0,.6,.9,1];   // how much each tongue point rides along when the jaw opens
+const JAW_PIVOT = [150,90], JAW_MAX_DEG = 7;
+const POSES = {
+  rest:  {},
+  th:    {jaw:.3, part:4, air:1, t:{0:[47,105],1:[55,100],2:[76,98],3:[100,96],10:[76,130],11:[52,112]}},
+  dh:    {jaw:.3, part:4, air:.6, voice:1, t:{0:[47,105],1:[55,100],2:[76,98],3:[100,96],10:[76,130],11:[52,112]}},
+  r:     {jaw:.2, round:.4, voice:1, t:{11:[60,114],0:[72,93],1:[80,101],2:[92,99],3:[108,91],4:[126,92],5:[140,102],6:[150,122],7:[151,146]}},
+  ae:    {jaw:1, voice:1, t:{0:[60,113],1:[68,108],2:[84,104],3:[104,103],4:[124,104],5:[139,110],6:[147,124]}},
+  ee:    {jaw:.05, voice:1, t:{0:[60,110],1:[67,100],2:[80,90],3:[98,85],4:[120,88],5:[138,100],6:[146,120]}},
+  ih:    {jaw:.25, voice:1, t:{1:[68,102],2:[82,94],3:[100,90],4:[120,92],5:[138,102]}},
+  uh:    {jaw:.5, voice:1, t:{1:[68,105],2:[84,100],3:[104,97],4:[124,98],5:[140,106]}},
+  ah:    {jaw:1, voice:1, t:{0:[61,113],1:[70,110],2:[86,108],3:[106,106],4:[126,102],5:[142,106],6:[152,124],7:[152,146]}},
+  schwa: {jaw:.3, voice:1, t:{3:[104,95]}},
+  flap:  {jaw:.3, voice:1, t:{0:[62,87],1:[70,95],2:[84,97],11:[62,104]}},
+  v:     {jaw:.2, vlip:1, air:1, voice:1},
+  w:     {jaw:.15, round:1, voice:1, t:{3:[106,90],4:[124,86],5:[140,98]}},
+  ng:    {jaw:.15, velum:1, nasal:1, voice:1, t:{4:[130,88],5:[143,94]}},
+  darkl: {jaw:.2, voice:1, t:{0:[62,88],11:[60,100],1:[70,96],2:[86,102],3:[104,100],4:[124,90],5:[140,98],6:[150,120]}},
+  oo:    {jaw:.1, round:1, voice:1, t:{2:[84,98],3:[104,90],4:[124,85],5:[140,96],6:[146,120]}},
+  uu:    {jaw:.25, round:.5, voice:1, t:{3:[104,93],4:[122,90],5:[139,100]}}
+};
+// seq: one or two target poses with an optional caption; keys: explicit [time, pose] timeline (flap t)
+const MOUTH = {
+  "th-voiceless": {seq:[["th"]]}, "th-voiced": {seq:[["dh"]]}, "r": {seq:[["r"]]}, "ae": {seq:[["ae"]]},
+  "ih-ee": {seq:[["ee","sheep /i/"],["ih","ship /ɪ/"]]}, "uh": {seq:[["uh"]]}, "ah": {seq:[["ah"]]}, "schwa": {seq:[["schwa"]]},
+  "flap-t": {seq:[["flap"]], dur:3, keys:[[0,"rest"],[.25,"schwa"],[.4,"schwa"],[.46,"flap"],[.52,"schwa"],[.75,"schwa"],[.92,"rest"],[1,"rest"]]},
+  "v-w": {seq:[["v","v · vest"],["w","w · west"]]}, "ng": {seq:[["ng"]]}, "dark-l": {seq:[["darkl"]]},
+  "oo": {seq:[["oo","fool /u/"],["uu","full /ʊ/"]]}
+};
+
+function mouthSVG(id, still){
+  const m = MOUTH[id]; if (!m) return "";
+  const full = k => ({jaw:.15, round:0, vlip:0, part:0, velum:0, voice:0, air:0, nasal:0, t:{}, ...POSES[k]});
+  const rot = (p, deg) => { const a = deg * Math.PI / 180, dx = p[0] - JAW_PIVOT[0], dy = p[1] - JAW_PIVOT[1];
+    return [JAW_PIVOT[0] + dx*Math.cos(a) - dy*Math.sin(a), JAW_PIVOT[1] + dx*Math.sin(a) + dy*Math.cos(a)]; };
+  const f = n => Math.round(n * 10) / 10;
+  // closed Catmull-Rom spline through the tongue points; same command count for every pose so Safari can morph it
+  function tongue(pose){
+    const pts = TONGUE_REST.map((p, i) => rot(pose.t[i] || p, -JAW_MAX_DEG * pose.jaw * JAW_PULL[i]));
+    const n = pts.length, P = i => pts[(i + n) % n];
+    let d = `M${f(pts[0][0])} ${f(pts[0][1])}`;
+    for (let i = 0; i < n; i++){
+      const p0 = P(i-1), p1 = P(i), p2 = P(i+1), p3 = P(i+2);
+      d += `C${f(p1[0]+(p2[0]-p0[0])/6)} ${f(p1[1]+(p2[1]-p0[1])/6)} ${f(p2[0]-(p3[0]-p1[0])/6)} ${f(p2[1]-(p3[1]-p1[1])/6)} ${f(p2[0])} ${f(p2[1])}`;
+    }
+    return d + "Z";
+  }
+  const VELUM = ["M136 72C146 72 156 76 160 82C158 88 152 90 146 88C142 86 139 83 136 80Z",
+                 "M136 72C144 74 150 82 152 92C151 98 147 100 144 96C141 90 139 84 136 80Z"];
+  const attrs = p => ({
+    tongue: tongue(p), velum: VELUM[p.velum],
+    jaw: `${f(-JAW_MAX_DEG * p.jaw)} ${JAW_PIVOT.join(" ")}`,
+    upper: `${f(-5 * p.round)} ${f(p.round)}`,
+    lower: `${f(-5 * p.round + 6 * p.vlip)} ${f(-p.round - 7 * p.vlip + p.part)}`,
+    voice: p.voice, air: p.air, nasal: p.nasal
+  });
+
+  // timeline
+  const keys = m.keys || (m.seq.length === 1
+    ? [[0,"rest"],[.22,m.seq[0][0]],[.7,m.seq[0][0]],[.92,"rest"],[1,"rest"]]
+    : [[0,"rest"],[.14,m.seq[0][0]],[.4,m.seq[0][0]],[.54,m.seq[1][0]],[.8,m.seq[1][0]],[.94,"rest"],[1,"rest"]]);
+  const dur = (m.dur || (m.seq.length === 1 ? 3.2 : 4.4)) + "s";
+  const frames = keys.map(([, k]) => attrs(full(k)));
+  const main = attrs(full(m.seq[0][0]));
+  const kt = keys.map(k => k[0]).join(";"), ks = keys.slice(1).map(() => ".45 0 .55 1").join(";");
+  const anim = (name, field, extra = "") => still ? "" :
+    `<animate${extra ? "Transform" : ""} attributeName="${name}" ${extra} dur="${dur}" repeatCount="indefinite" calcMode="spline" keyTimes="${kt}" keySplines="${ks}" values="${frames.map(fr => fr[field]).join(";")}"/>`;
+  const caps = m.seq.length > 1 ? m.seq.map(([k, text], i) => {
+    const vals = keys.map(([, kk]) => kk === k ? 1 : 0);
+    return `<text x="8" y="192" class="m-cap" opacity="${still ? (i ? 0 : 1) : 0}">${esc(text)}${still ? "" :
+      `<animate attributeName="opacity" dur="${dur}" repeatCount="indefinite" calcMode="spline" keyTimes="${kt}" keySplines="${ks}" values="${vals.join(";")}"/>`}</text>`;
+  }).join("") : "";
+
+  return `<svg viewBox="0 0 200 200" class="mouth" role="img" aria-label="Side view of the mouth showing tongue and lip position">
+    <defs><marker id="m-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="m-air-fill"/></marker></defs>
+    <path class="m-line" d="M70 6C64 22 60 34 52 46L30 62Q25 68 32 72L42 75Q48 77 48 82"/>
+    <path class="m-line" d="M36 70Q40 67 44 70"/>
+    <path class="m-line" d="M46 62C80 48 140 48 162 66C165 100 166 140 165 196"/>
+    <path class="m-line" d="M146 162C148 154 152 150 156 150"/>
+    <path class="m-line" d="M150 178L162 178"/>
+    <path class="m-skin" d="M52 84C52 78 62 74 80 72C105 70 125 70 136 72L136 80C120 78 100 77 84 80C74 82 68 86 64 88C61 90 58 92 56 92L56 86Z"/>
+    <path class="m-skin" d="${main.velum}">${anim("d","velum")}</path>
+    <path class="m-tongue" d="${main.tongue}">${anim("d","tongue")}</path>
+    <path class="m-tooth" d="M52 84L56 86L57 92C57 98 55 103 53 106L50 106C50 100 50 92 52 84Z"/>
+    <g transform="rotate(${main.jaw})">${anim("transform","jaw",'type="rotate"')}
+      <path class="m-tooth" d="M54 108L57 108C59 114 60 120 60 126L55 127C55 120 54 114 54 108Z"/>
+      <path class="m-line" d="M49 124C44 130 43 142 50 148C62 156 96 159 122 164"/>
+      <g transform="translate(${main.lower})">${anim("transform","lower",'type="translate"')}
+        <path class="m-skin" d="M50 108C44 106 38 108 37 112C37 118 42 122 50 122C53 118 53 112 50 108Z"/></g>
+    </g>
+    <g transform="translate(${main.upper})">${anim("transform","upper",'type="translate"')}
+      <path class="m-skin" d="M48 82C42 84 37 90 36 96C36 102 42 105 50 104C52 98 52 88 48 82Z"/></g>
+    <path class="m-air" d="M48 107L18 107" marker-end="url(#m-arrow)" opacity="${main.air}">${anim("opacity","air")}</path>
+    <path class="m-air" d="M156 118C160 92 158 70 134 62C104 56 66 60 34 68" marker-end="url(#m-arrow)" opacity="${main.nasal}">${anim("opacity","nasal")}</path>
+    <path class="m-voice" d="M144 186l3-4l3 8l3-8l3 8l3-8l3 4" opacity="${main.voice}">${anim("opacity","voice")}</path>
+    <text x="4" y="94" class="m-label">lips</text>
+    <text x="96" y="124" class="m-label">tongue</text>
+    <text x="84" y="67" class="m-label">roof</text>
+    <text x="170" y="86" class="m-label">soft</text><text x="170" y="94" class="m-label">palate</text>
+    <text x="168" y="184" class="m-label">voice</text>
+    ${caps}
+  </svg>`;
+}
+
+/* ---------- Real speakers: MRI videos from Seeing Speech (University of Glasgow, CC BY-NC-ND 4.0), opened on their site ---------- */
+const SS = (chart, id) => `https://www.seeingspeech.ac.uk/ipa-charts/?chart=${chart}&datatype=1&speaker=1#location=${id}`;
+const REAL = {
+  "th-voiceless": [["θ", SS(1,952)]], "th-voiced": [["ð", SS(1,240)]], "r": [["ɹ", SS(1,633)]],
+  "ae": [["a, the nearest reference vowel", SS(4,97)]], "ih-ee": [["i (sheep)", SS(4,105)], ["ɪ (ship)", SS(4,618)]],
+  "uh": [["ʌ", SS(4,652)]], "ah": [["ɑ", SS(4,593)]], "schwa": [["ə", SS(4,601)]], "flap-t": [["ɾ", SS(1,638)]],
+  "v-w": [["v", SS(1,118)], ["w", SS(3,119)]], "ng": [["ŋ", SS(1,331)]],
+  "dark-l": [["dark l in English", "https://www.seeingspeech.ac.uk/r-and-l-in-english/#item=rl-13"]],
+  "oo": [["u (fool)", SS(4,117)], ["ʊ (full)", SS(4,650)]]
+};
 
 /* ---------- Storage (ratings per item) ---------- */
 const KEY = "accentlab.v1";
@@ -430,6 +565,7 @@ async function askTutor(s, item, res){
 }
 
 /* ---------- UI helpers ---------- */
+const reduceMotion = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
 const $ = (s, el=document) => el.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 let toastT;
@@ -491,13 +627,19 @@ function renderSound(s){
       <section class="card">
         <h2>How to make it</h2>
         <div class="howto">
-          <div class="gif" id="gif">
-            <img alt="Animation of tongue and lip position for ${esc(s.name)}" src="gifs/${s.id}.gif" hidden>
-            <span id="gifEmpty">Tongue animation goes here<br><code>gifs/${s.id}.gif</code></span>
+          <div style="min-width:0">
+            <div class="gif mouthbox" id="gif" aria-label="Tap to pause or play the animation">
+              <img alt="Animation of tongue and lip position for ${esc(s.name)}" src="gifs/${s.id}.gif" hidden>
+              <div id="gifEmpty">${mouthSVG(s.id, reduceMotion)}</div>
+            </div>
+            <p class="note">${reduceMotion ? "" : "Tap the picture to pause. "}<span style="color:var(--listen)">Blue arrow</span>: air. <span style="color:var(--rec)">Red zigzag</span>: voice on.</p>
           </div>
           <div style="min-width:0">
             <ol class="steps">${s.steps.map(t=>`<li>${esc(t)}</li>`).join("")}</ol>
             <p class="avoid"><b>Avoid:</b> ${esc(s.avoid)}</p>
+            ${REAL[s.id] ? `<p class="label" style="margin:14px 0 0">Watch a real speaker (MRI scan)</p>
+            <ul class="real">${REAL[s.id].map(([label, url]) => `<li><a href="${url}" target="_blank" rel="noopener">▶ ${esc(label)} ↗</a></li>`).join("")}</ul>
+            <p class="note">Videos by Seeing Speech, University of Glasgow (CC BY-NC-ND 4.0). They open on their site.${/^(ae|ih-ee|uh|ah|schwa|oo)$/.test(s.id) ? " Vowels there are reference vowels, close to but not exactly American English." : ""}</p>` : ""}
           </div>
         </div>
       </section>
@@ -524,6 +666,8 @@ function renderSound(s){
   const img = $("#gif img");
   img.onload = () => { img.hidden = false; $("#gifEmpty").hidden = true; };
   img.onerror = () => { img.remove(); };
+  $("#gif").onclick = () => { const svg = $("#gif svg"); if (!svg || !svg.pauseAnimations) return;
+    svg.animationsPaused() ? svg.unpauseAnimations() : svg.pauseAnimations(); };
 
   const player = $("#player");
   const problem = micProblem();
